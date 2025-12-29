@@ -723,7 +723,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v1.7.3</div>
+        <div class="version-badge">v1.7.4</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -1461,14 +1461,14 @@
             discardEl.innerHTML = gameState.discardPile.slice(-3).map((card, i) => {
                 const isTop = i === (gameState.discardPile.slice(-3).length - 1);
 
-                let valueClass = card.value;
+                let valueClass = `val-${card.value}`;
                 if (card.symbol) valueClass += ` ${card.symbol}`;
 
                 let opacity = 1;
                 // 이전 카드들은 조금 흐리게? 아니면 그냥 둠.
 
                 return `
-                    <div class="card ${card.suit} ${valueClass}" 
+                    <div class="card ${card.suit} ${valueClass}"
                          style="width:60px;height:85px;margin-left:${i === 0 ? 0 : -45}px;position:relative;z-index:${i};box-shadow:-2px 0 5px rgba(0,0,0,0.3);">
                     </div>
                 `;
