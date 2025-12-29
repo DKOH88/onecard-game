@@ -626,10 +626,25 @@
         }
 
         .opponent-area .cards-row {
-            max-width: 100px !important;
+            max-width: 120px !important;
             flex-wrap: wrap !important;
-            gap: 3px !important;
-            justify-content: flex-start !important;
+            gap: 0 !important;
+            /* 갭 제거 */
+            justify-content: center !important;
+            padding-left: 10px;
+        }
+
+        .opponent-area .card {
+            margin-left: -22px !important;
+            /* 가로 겹치기 */
+            margin-bottom: -30px !important;
+            /* 세로 겹치기 */
+            box-shadow: -1px 0 2px rgba(0, 0, 0, 0.3);
+            /* 그림자로 구분 */
+        }
+
+        .opponent-area .card:first-child {
+            margin-left: 0 !important;
         }
 
         .opponent-area .opponent-card {
@@ -690,7 +705,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v1.6.8</div>
+        <div class="version-badge">v1.6.9</div>
 
         <div id="main-menu">
             <div class="input-group">
