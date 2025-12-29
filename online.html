@@ -887,6 +887,10 @@
                     gameState = roomData.gameState;
                     players = [];
                     const playerOrder = roomData.gameState.playerOrder || [];
+
+                    // 내 위치(인덱스) 먼저 찾기
+                    const myIndex = playerOrder.indexOf(myPlayerId);
+
                     playerOrder.forEach((pid, idx) => {
                         const pData = roomData.players[pid];
                         const handData = roomData.gameState.hands ? roomData.gameState.hands[pid] : [];
@@ -897,7 +901,7 @@
                             isMe: pid === myPlayerId,
                             isBankrupt: pData.isBankrupt || false,
                             rank: pData.rank || null,
-                            slot: getSlotForPlayer(idx, playerOrder.length)
+                            slot: getSlotForPlayer(idx, playerOrder.length, myIndex)
                         });
                     });
                     showGameScreen();
@@ -948,8 +952,9 @@
             }
         }
 
-        function getSlotForPlayer(index, totalPlayers) {
-            const myIndex = players.findIndex(p => p.isMe);
+        function getSlotForPlayer(index, totalPlayers, myIndex) {
+            // myIndex가 유효하지 않으면 기본값 사용
+            if (myIndex < 0) myIndex = 0;
             const relativeIndex = (index - myIndex + totalPlayers) % totalPlayers;
 
             const slots = {
