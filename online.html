@@ -751,7 +751,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v1.9.7</div>
+        <div class="version-badge">v1.9.8</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -1844,6 +1844,18 @@
             }).join('');
 
             document.getElementById('action-buttons').style.display = selectedCards.length > 0 ? 'flex' : 'none';
+
+            // 낼 카드가 없으면 덱 하이라이트
+            const deckEl = document.querySelector('.deck');
+            if (deckEl) deckEl.classList.remove('highlight');
+
+            const currentP = players[singlePlayerState.currentPlayerIndex];
+            if (currentP && currentP.isHuman) {
+                const hasPlayable = currentP.hand.some(card => canPlayCardSingle(card));
+                if (!hasPlayable && deckEl) {
+                    deckEl.classList.add('highlight');
+                }
+            }
         }
 
         function canPlayCardSingle(card) {
