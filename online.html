@@ -690,7 +690,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v1.6.4</div>
+        <div class="version-badge">v1.6.5</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -1492,6 +1492,9 @@
 
             const topCard = gameState.discardPile[gameState.discardPile.length - 1];
 
+            // 조커 공격 피해 후 아무 카드나 낼 수 있음
+            if (gameState.currentSuit === 'any') return true;
+
             if (card.suit === 'black-joker' || card.suit === 'color-joker') return true;
             if (card.suit === gameState.currentSuit) return true;
             if (card.value === topCard.value) return true;
@@ -1619,11 +1622,15 @@
             // 다음 턴
             let nextPlayerIndex = (gameState.currentPlayerIndex + gameState.direction + players.length) % players.length;
 
+            // 조커 공격 후 카드 먹으면 아무 카드나 낼 수 있음
+            const wasJokerAttack = gameState.attackType === 'black-joker' || gameState.attackType === 'color-joker';
+
             updateGameState({
                 deck: newDeck,
                 currentPlayerIndex: nextPlayerIndex,
                 attackStack: 0,
                 attackType: null,
+                currentSuit: wasJokerAttack ? 'any' : gameState.currentSuit,
                 [`hands/${myPlayerId}`]: newHand
             });
         }
