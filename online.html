@@ -690,7 +690,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v1.4.1</div>
+        <div class="version-badge">v1.4.2</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -1043,7 +1043,22 @@
         }
 
         function setupDisconnectHandler() {
+            // 연결 끊김 시 오프라인 표시
             roomRef.child('players/' + myPlayerId + '/connected').onDisconnect().set(false);
+
+            // 화면 복귀 시 자동 재연결
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible' && roomRef && myPlayerId) {
+                    roomRef.child('players/' + myPlayerId + '/connected').set(true);
+                }
+            });
+
+            // 포커스 복귀 시에도 재연결 (일부 모바일 브라우저용)
+            window.addEventListener('focus', () => {
+                if (roomRef && myPlayerId) {
+                    roomRef.child('players/' + myPlayerId + '/connected').set(true);
+                }
+            });
         }
 
         function listenToRoom() {
