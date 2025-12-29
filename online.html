@@ -549,9 +549,27 @@
         }
 
         .deck {
-            position: relative;
-            width: 60px;
-            height: 85px;
+            position: fixed !important;
+            bottom: 30px;
+            left: 30px;
+            width: 80px;
+            /* 터치 쉽도록 조금 키움 */
+            height: 110px;
+            z-index: 100;
+            cursor: pointer;
+        }
+
+        /* 덱이 먹는 버튼임을 알려주는 텍스트 추가 가능 (선택 사항) */
+        .deck::after {
+            content: '카드 받기';
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 14px;
+            white-space: nowrap;
+            text-shadow: 1px 1px 2px black;
         }
 
         .deck .card-back {
@@ -705,7 +723,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v1.6.9</div>
+        <div class="version-badge">v1.7.0</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -1197,6 +1215,14 @@
                     });
                     showGameScreen();
                     render();
+
+                    // 전역 알림 표시 (무늬 변경 등)
+                    if (gameState.lastAction && gameState.lastActionId && gameState.lastActionId !== window.lastActionIdProcessed) {
+                        if (typeof showNotification === 'function') {
+                            showNotification(gameState.lastAction);
+                        }
+                        window.lastActionIdProcessed = gameState.lastActionId;
+                    }
 
                     // 게임 종료 확인
                     if (roomData.gameState.status === 'finished' && roomData.gameState.winner) {
@@ -2278,6 +2304,11 @@
             if (window.pendingUpdate) {
                 const { newHand, newDiscardPile, newDeck, newAttackStack, newAttackType,
                     newSkipTurns, newDirection, nextPlayerIndex } = window.pendingUpdate;
+
+                // 알림 메시지 생성
+                const suitNames = { 'spade': '♠ 스페이드', 'heart': '♥ 하트', 'diamond': '♦ 다이아몬드', 'club': '♣ 클로버' };
+                const msg = `${myNickname}님이 무늬를 [${suitNames[suit]}]로 바꿨습니다!`;
+
                 updateGameState({
                     deck: newDeck,
                     discardPile: newDiscardPile,
@@ -2287,6 +2318,8 @@
                     attackType: newAttackType,
                     currentSuit: suit,
                     skipTurns: 0,
+                    lastAction: msg,
+                    lastActionId: Date.now(),
                     [`hands/${myPlayerId}`]: newHand
                 });
                 window.pendingUpdate = null;
@@ -2322,6 +2355,52 @@
                 [`hands/${myPlayerId}`]: newHand
             });
         };
+
+        function showNotification(msg) {
+            let el = document.getElementById('game-notification');
+            if (!el) {
+                // 동적 생성
+                el = document.createElement('div');
+                el.id = 'game-notification';
+                el.className = 'game-notification';
+                document.body.appendChild(el);
+
+                const style = document.createElement('style');
+                style.innerHTML = `
+        .game-notification {
+            position: fixed;
+            top: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: #fbbf24;
+            padding: 12px 25px;
+            border-radius: 30px;
+            font-size: 1.1rem;
+            z-index: 200;
+            display: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            border: 2px solid #fbbf24;
+            animation: slideDown 0.3s ease-out;
+            white-space: nowrap;
+            font-weight: bold;
+        }
+        @keyframes slideDown {
+            from { top: 10%; opacity: 0; }
+            to { top: 20%; opacity: 1; }
+        }
+                `;
+                document.head.appendChild(style);
+            }
+
+            el.textContent = msg;
+            el.style.display = 'block';
+
+            if (window.notificationTimer) clearTimeout(window.notificationTimer);
+            window.notificationTimer = setTimeout(() => {
+                el.style.display = 'none';
+            }, 3000);
+        }
     </script>
 </body>
 
