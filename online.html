@@ -749,7 +749,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v1.7.9</div>
+        <div class="version-badge">v1.7.10</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -1500,6 +1500,16 @@
             // 낼 카드가 없으면 덱 하이라이트
             const deckEl = document.querySelector('.deck');
             if (deckEl) deckEl.classList.remove('highlight');
+
+            // 덱 이미지 강제 적용 (CSS 우선순위 문제 해결)
+            const deckCardBack = document.querySelector('.deck .card-back');
+            if (deckCardBack) {
+                deckCardBack.style.position = 'absolute';
+                deckCardBack.style.width = '100%';
+                deckCardBack.style.height = '100%';
+                deckCardBack.style.background = "url('cards/wait.jpg?v=1') center/cover no-repeat";
+                deckCardBack.style.borderRadius = "8px";
+            }
 
             if (currentPlayer && currentPlayer.isMe) {
                 const myHandInfo = players.find(p => p.isMe);
