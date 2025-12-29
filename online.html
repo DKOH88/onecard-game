@@ -746,7 +746,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v1.7.6</div>
+        <div class="version-badge">v1.7.7</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -781,8 +781,9 @@
         <div id="join-form" class="hidden">
             <div class="input-group">
                 <label>방 코드</label>
-                <input type="text" id="room-code-input" placeholder="6자리 코드 입력" maxlength="6"
-                    style="text-transform: uppercase;">
+                <input type="number" id="room-code-input" placeholder="4자리 숫자 코드" maxlength="4"
+                    style="text-transform: uppercase;"
+                    oninput="if(this.value.length > 4) this.value = this.value.slice(0, 4);">
             </div>
             <button class="btn btn-primary" onclick="joinRoom()">참가하기</button>
             <button class="btn btn-secondary" onclick="hideJoinForm()">취소</button>
@@ -976,12 +977,8 @@
 
         // 유틸리티 함수
         function generateRoomCode() {
-            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-            let code = '';
-            for (let i = 0; i < 6; i++) {
-                code += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            return code;
+            // 4자리 숫자 생성
+            return Math.floor(1000 + Math.random() * 9000).toString();
         }
 
         function generatePlayerId() {
@@ -1133,8 +1130,8 @@
                 alert('닉네임을 입력해주세요!');
                 return;
             }
-            if (!roomCode || roomCode.length !== 6) {
-                alert('올바른 방 코드를 입력해주세요!');
+            if (!roomCode || roomCode.length !== 4) {
+                alert('올바른 4자리 숫자를 입력해주세요!');
                 return;
             }
 
