@@ -748,7 +748,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v1.8.5</div>
+        <div class="version-badge">v1.8.6</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -1439,7 +1439,7 @@
                 const isCurrent = gameState.currentPlayerIndex === idx;
 
                 if (p.isMe) {
-                    // 내 카드 (앞면) - 라벨을 카드 아래로 이동
+                    // 내 카드 (앞면) - 라벨을 녹색 테두리 밖으로 이동
                     slotEl.innerHTML = `
                         <div class="player-area ${isCurrent ? 'current-turn' : ''}">
                             <div class="cards-row" style="${p.hand.length > 7 ? 'flex-wrap:wrap;justify-content:center;height:auto;' : ''}">
@@ -1456,10 +1456,10 @@
                                     `;
                     }).join('')}
                             </div>
-                            <div class="player-label" style="margin-top:10px;">
-                                ${p.name} (나)
-                                <span class="card-count">${p.hand.length}장</span>
-                            </div>
+                        </div>
+                        <div class="player-label" style="margin-top:15px;text-align:center;">
+                            ${p.name} (나)
+                            <span class="card-count">${p.hand.length}장</span>
                         </div>
                     `;
                 } else {
@@ -1784,7 +1784,7 @@
                 const isCurrent = singlePlayerState.currentPlayerIndex === idx;
 
                 if (p.isHuman) {
-                    // 내 카드 (앞면) - 라벨을 카드 아래로 이동
+                    // 내 카드 (앞면) - 라벨을 녹색 테두리 밖으로 이동
                     slotEl.innerHTML = `
                         <div class="player-area ${isCurrent ? 'current-turn' : ''} ${p.isBankrupt ? 'bankrupt' : ''}">
                             <div class="cards-row">
@@ -1800,12 +1800,12 @@
                                     `;
                     }).join('')}
                             </div>
-                            <div class="player-label" style="margin-top:10px;">
-                                ${p.name}
-                                <span class="card-count">${p.hand.length}장</span>
-                                ${p.isBankrupt ? '<span style="background:#ef4444;padding:2px 6px;border-radius:5px;font-size:0.8rem;">파산</span>' : ''}
-                                ${p.rank ? `<span style="background:#4ade80;padding:2px 6px;border-radius:5px;font-size:0.8rem;">${p.rank}등</span>` : ''}
-                            </div>
+                        </div>
+                        <div class="player-label" style="margin-top:15px;text-align:center;">
+                            ${p.name}
+                            <span class="card-count">${p.hand.length}장</span>
+                            ${p.isBankrupt ? '<span style="background:#ef4444;padding:2px 6px;border-radius:5px;font-size:0.8rem;">파산</span>' : ''}
+                            ${p.rank ? `<span style="background:#4ade80;padding:2px 6px;border-radius:5px;font-size:0.8rem;">${p.rank}등</span>` : ''}
                         </div>
                     `;
                 } else {
