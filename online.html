@@ -596,7 +596,25 @@
         .action-buttons {
             display: none;
             gap: 10px;
-            margin-top: 10px;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 50;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 15px;
+            flex-direction: column;
+        }
+
+        /* 상대방 카드 (작게) */
+        .opponent-card {
+            width: 35px !important;
+            height: 50px !important;
+            margin-left: -20px !important;
+        }
+
+        .opponent-card:first-child {
+            margin-left: 0 !important;
         }
 
         .suit-selector {
@@ -1253,7 +1271,7 @@
                                 <span class="card-count">${p.hand.length}장</span>
                             </div>
                             <div class="cards-row">
-                                ${p.hand.map(() => `<div class="card card-back"></div>`).join('')}
+                                ${p.hand.map(() => `<div class="card card-back opponent-card"></div>`).join('')}
                             </div>
                         </div>
                     `;
@@ -1591,7 +1609,8 @@
                                 ${p.rank ? `<span style="background:#4ade80;padding:2px 6px;border-radius:5px;font-size:0.8rem;">${p.rank}등</span>` : ''}
                             </div>
                             <div class="cards-row">
-                                ${p.rank ? '' : p.hand.map(() => `<div class="card card-back"></div>`).join('')}
+                                ${p.rank ? '' : p.hand.map(() => `<div class="card card-back opponent-card"></div>`).join('')}
+                            </div>
                             </div>
                         </div>
                     `;
