@@ -747,7 +747,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v1.7.15</div>
+        <div class="version-badge">v1.7.16</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -1849,6 +1849,10 @@
                 return canDefendWithSingle(card);
             }
             const topCard = singlePlayerState.discardPile[singlePlayerState.discardPile.length - 1];
+
+            // 조커 공격 피해 후 아무 카드나 낼 수 있음
+            if (singlePlayerState.currentSuit === 'any') return true;
+
             if (card.suit === 'black-joker' || card.suit === 'color-joker') return true;
             if (card.suit === singlePlayerState.currentSuit) return true;
             if (card.value === topCard.value) return true;
@@ -2025,6 +2029,11 @@
             }
 
             if (singlePlayerState.attackStack > 0) {
+                // 조커 공격 후 카드를 먹으면 다음 사람은 아무 카드나 낼 수 있음
+                const wasJokerAttack = singlePlayerState.attackType === 'black-joker' || singlePlayerState.attackType === 'color-joker';
+                if (wasJokerAttack) {
+                    singlePlayerState.currentSuit = 'any';
+                }
                 setMessage(`💥 ${player.name} ${singlePlayerState.attackStack}장 뽑음!`);
                 singlePlayerState.attackStack = 0;
                 singlePlayerState.attackType = null;
