@@ -749,7 +749,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v1.7.11</div>
+        <div class="version-badge">v1.7.12</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -2409,11 +2409,17 @@
                 if (newDeck.length > 0) newHand.push(newDeck.pop());
             }
             let nextPlayerIndex = (gameState.currentPlayerIndex + gameState.direction + players.length) % players.length;
+
+            // 조커 공격 후 카드를 먹으면 다음 사람은 아무 카드나 낼 수 있음
+            const wasJokerAttack = gameState.attackType === 'black-joker' || gameState.attackType === 'color-joker';
+            const nextSuit = wasJokerAttack ? 'any' : gameState.currentSuit;
+
             updateGameState({
                 deck: newDeck,
                 currentPlayerIndex: nextPlayerIndex,
                 attackStack: 0,
                 attackType: null,
+                currentSuit: nextSuit,
                 [`hands/${myPlayerId}`]: newHand
             });
         };
