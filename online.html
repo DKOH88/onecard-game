@@ -753,7 +753,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.0.1</div>
+        <div class="version-badge">v2.0.2</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -2034,7 +2034,7 @@
                 const suitNames = { 'spade': '♠ 스페이드', 'heart': '♥ 하트', 'diamond': '♦ 다이아몬드', 'club': '♣ 클로버' };
                 const humanPlayer = players.find(p => p.isHuman);
                 const playerName = humanPlayer ? humanPlayer.name : '플레이어';
-                showNotification(`${playerName}님이 무늬를 [${suitNames[suit]}]로 바꿨습니다!`);
+                showNotification(`${playerName}님이 문양을 [${suitNames[suit]}]로 바꿨습니다!`);
 
                 setMessage(`♻️ ${suitSymbols[suit]} 선택!`);
 
@@ -2232,7 +2232,7 @@
 
                 // AI 7카드 무늬 변경 알림 (온라인과 동일)
                 const suitNames = { 'spade': '♠ 스페이드', 'heart': '♥ 하트', 'diamond': '♦ 다이아몬드', 'club': '♣ 클로버' };
-                showNotification(`${player.name}님이 무늬를 [${suitNames[best]}]로 바꿤습니다!`);
+                showNotification(`${player.name}님이 문양을 [${suitNames[best]}]로 바꿨습니다!`);
             }
 
             handleSpecialCardsSingle(cards);
@@ -2433,7 +2433,7 @@
 
                 // 알림 메시지 생성
                 const suitNames = { 'spade': '♠ 스페이드', 'heart': '♥ 하트', 'diamond': '♦ 다이아몬드', 'club': '♣ 클로버' };
-                const msg = `${myNickname}님이 무늬를 [${suitNames[suit]}]로 바꿨습니다!`;
+                const msg = `${myNickname}님이 문양을 [${suitNames[suit]}]로 바꿨습니다!`;
 
                 const updates = {
                     deck: newDeck,
