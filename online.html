@@ -293,7 +293,9 @@
 
         .card.playable:not(.selected) {
             border-color: #4ade80;
-            animation: pulse-green 1s infinite;
+            animation: bounce-green 1s infinite;
+            z-index: 5;
+            /* 움직일 때 살짝 위로 */
         }
 
         .card-back {
@@ -612,6 +614,20 @@
             }
         }
 
+        @keyframes bounce-green {
+
+            0%,
+            100% {
+                transform: translateY(0);
+                box-shadow: 0 0 5px #4ade80;
+            }
+
+            50% {
+                transform: translateY(-6px);
+                box-shadow: 0 0 15px #4ade80;
+            }
+        }
+
         .discard-pile {
             display: flex;
             align-items: center;
@@ -756,7 +772,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.1.0</div>
+        <div class="version-badge">v2.1.1</div>
 
         <div id="main-menu">
             <div class="input-group">
