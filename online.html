@@ -690,7 +690,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v1.5.1</div>
+        <div class="version-badge">v1.5.2</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -1297,7 +1297,7 @@
                             </div>
                             <div class="cards-row">
                                 ${p.hand.map((card, i) => {
-                        const playable = isCurrent && canPlayCard(card);
+                        const playable = isMyTurn && canPlayCard(card);
                         const selected = selectedCards.includes(i);
                         const isNormalSuit = ['spade', 'heart', 'diamond', 'club'].includes(card.suit);
                         const valueClass = isNormalSuit ? `val-${card.value}` : '';
