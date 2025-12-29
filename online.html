@@ -723,7 +723,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v1.7.4</div>
+        <div class="version-badge">v1.7.5</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -2316,7 +2316,7 @@
                 const suitNames = { 'spade': '♠ 스페이드', 'heart': '♥ 하트', 'diamond': '♦ 다이아몬드', 'club': '♣ 클로버' };
                 const msg = `${myNickname}님이 무늬를 [${suitNames[suit]}]로 바꿨습니다!`;
 
-                updateGameState({
+                const updates = {
                     deck: newDeck,
                     discardPile: newDiscardPile,
                     currentPlayerIndex: nextPlayerIndex,
@@ -2328,7 +2328,15 @@
                     lastAction: msg,
                     lastActionId: Date.now(),
                     [`hands/${myPlayerId}`]: newHand
-                });
+                };
+
+                // 승리 체크 (손패가 0장이면 승리)
+                if (newHand.length === 0) {
+                    updates.status = 'finished';
+                    updates.winner = myPlayerId;
+                }
+
+                updateGameState(updates);
                 window.pendingUpdate = null;
             }
         };
