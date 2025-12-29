@@ -690,7 +690,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v1.6.1</div>
+        <div class="version-badge">v1.6.2</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -1433,10 +1433,13 @@
             document.getElementById('action-buttons').style.display = selectedCards.length > 0 ? 'flex' : 'none';
 
             // 메시지
-            if (gameState.attackStack > 0) {
+            if (gameState.attackStack > 0 && isMyTurn) {
                 setMessage(`⚔️ ${gameState.attackStack}장 공격!`, 'attack');
             } else if (isMyTurn) {
                 setMessage('당신의 턴입니다');
+            } else {
+                const currentP = players[gameState.currentPlayerIndex];
+                setMessage(`${currentP ? currentP.name : ''}의 턴...`);
             }
 
             // 내 턴으로 바뀌었을 때 알림음 재생
@@ -2196,7 +2199,9 @@
 
             updateGameState(updates);
 
+            // 즉시 UI 업데이트
             selectedCards = [];
+            document.getElementById('action-buttons').style.display = 'none';
         };
 
         const selectSuitOnlineOriginal = function (suit) {
