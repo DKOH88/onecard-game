@@ -747,7 +747,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v1.7.14</div>
+        <div class="version-badge">v1.7.15</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -2412,14 +2412,37 @@
             const wasJokerAttack = gameState.attackType === 'black-joker' || gameState.attackType === 'color-joker';
             const nextSuit = wasJokerAttack ? 'any' : gameState.currentSuit;
 
-            updateGameState({
+            // 파산 체크 (15장 초과)
+            const BANKRUPT_LIMIT = 15;
+            let isBankrupt = newHand.length > BANKRUPT_LIMIT;
+
+            const updates = {
                 deck: newDeck,
                 currentPlayerIndex: nextPlayerIndex,
                 attackStack: 0,
                 attackType: null,
                 currentSuit: nextSuit,
-                [`hands/${myPlayerId}`]: newHand
-            });
+                [`hands/${myPlayerId}`]: isBankrupt ? [] : newHand
+            };
+
+            if (isBankrupt) {
+                updates[`players/${myPlayerId}/isBankrupt`] = true;
+
+                // 활성 플레이어 수 체크
+                const activePlayers = players.filter(p => !p.isBankrupt && p.hand.length > 0);
+                // 나를 제외한 활성 플레이어
+                const remainingPlayers = activePlayers.filter(p => p.id !== myPlayerId);
+
+                if (remainingPlayers.length === 1) {
+                    // 마지막 남은 사람이 승리
+                    updates.status = 'finished';
+                    updates.winner = remainingPlayers[0].id;
+                }
+
+                alert('카드가 15장을 초과하여 파산했습니다! 😱');
+            }
+
+            updateGameState(updates);
         };
 
         function showNotification(msg) {
