@@ -747,7 +747,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v1.7.19</div>
+        <div class="version-badge">v1.7.20</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -2142,6 +2142,9 @@
 
             const cp = players[singlePlayerState.currentPlayerIndex];
             if (cp.isHuman) {
+                // 내 턴 알림음 재생 (온라인과 동일)
+                playTurnSound();
+
                 if (singlePlayerState.attackStack > 0) {
                     setMessage(`⚔️ ${singlePlayerState.attackStack}장 공격! 방어 또는 뽑기`, 'attack');
                 } else {
