@@ -747,7 +747,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v1.7.16</div>
+        <div class="version-badge">v1.7.17</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -1960,6 +1960,10 @@
             const value = cards[0].value;
             const count = cards.length;
 
+            // 조커 감지 (온라인과 동일하게 some() 사용)
+            const hasBlackJoker = cards.some(c => c.suit === 'black-joker');
+            const hasColorJoker = cards.some(c => c.suit === 'color-joker');
+
             if (value === '2') {
                 singlePlayerState.attackStack += 2 * count;
                 singlePlayerState.attackType = '2';
@@ -1968,25 +1972,39 @@
                 singlePlayerState.attackStack += 3 * count;
                 singlePlayerState.attackType = 'A';
                 setMessage(`⚔️ +${3 * count}장! (누적: ${singlePlayerState.attackStack}장)`, 'attack');
-            } else if (cards[0].suit === 'black-joker') {
+            } else if (hasBlackJoker) {
                 singlePlayerState.attackStack += 5 * count;
                 singlePlayerState.attackType = 'black-joker';
                 setMessage(`🖤 +${5 * count}장!`, 'attack');
-            } else if (cards[0].suit === 'color-joker') {
+            } else if (hasColorJoker) {
                 singlePlayerState.attackStack += 7 * count;
                 singlePlayerState.attackType = 'color-joker';
                 setMessage(`🌈 +${7 * count}장!`, 'attack');
             } else if (value === 'K') {
                 singlePlayerState.skipTurns += 2 * count;
+                singlePlayerState.attackStack = 0;  // 공격 초기화 추가
+                singlePlayerState.attackType = null;
                 setMessage(`👑 ${2 * count}턴 스킵!`);
             } else if (value === 'Q') {
-                if (count % 2 === 1) {
+                // 2인 플레이에서는 Q가 J처럼 1턴 스킵으로 작동 (온라인과 동일)
+                if (players.length === 2) {
+                    singlePlayerState.skipTurns += 1 * count;
+                    setMessage(`👸 ${count}턴 스킵!`);
+                } else if (count % 2 === 1) {
                     singlePlayerState.direction *= -1;
                     setMessage(`👸 방향 전환! ${singlePlayerState.direction === 1 ? '⟳' : '⟲'}`);
                 }
+                singlePlayerState.attackStack = 0;  // 공격 초기화 추가
+                singlePlayerState.attackType = null;
             } else if (value === 'J') {
                 singlePlayerState.skipTurns += 1 * count;
+                singlePlayerState.attackStack = 0;  // 공격 초기화 추가
+                singlePlayerState.attackType = null;
                 setMessage(`🎭 ${count}턴 스킵!`);
+            } else {
+                // 일반 카드도 공격 초기화
+                singlePlayerState.attackStack = 0;
+                singlePlayerState.attackType = null;
             }
         }
 
@@ -1995,6 +2013,22 @@
                 singlePlayerState.currentSuit = suit;
                 document.getElementById('suit-selector').style.display = 'none';
                 setMessage(`♻️ ${suitSymbols[suit]} 선택!`);
+
+                // 7카드로 마지막 카드를 냈을 때 승리 체크 (온라인과 동일)
+                const humanPlayer = players.find(p => p.isHuman);
+                if (humanPlayer && humanPlayer.hand.length === 0) {
+                    const currentRank = players.filter(p => p.rank !== null).length + 1;
+                    humanPlayer.rank = currentRank;
+                    setMessage(`🎉 ${humanPlayer.name}님이 ${currentRank}등으로 탈출!`);
+                    renderSingle();
+                    if (isGameOverSingle()) {
+                        setTimeout(endGameSingle, 1500);
+                    } else {
+                        setTimeout(nextTurnSingle, 1500);
+                    }
+                    return;
+                }
+
                 nextTurnSingle();
             } else {
                 selectSuitOnlineOriginal(suit);
