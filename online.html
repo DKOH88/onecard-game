@@ -690,7 +690,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v1.5.0</div>
+        <div class="version-badge">v1.5.1</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -1072,7 +1072,7 @@
                 const roomData = snapshot.val();
 
                 // 게임 시작 확인
-                if (roomData.status === 'playing' && roomData.gameState) {
+                if ((roomData.status === 'playing' || roomData.status === 'finished') && roomData.gameState) {
                     gameState = roomData.gameState;
                     players = [];
                     const playerOrder = roomData.gameState.playerOrder || [];
@@ -1095,6 +1095,11 @@
                     });
                     showGameScreen();
                     render();
+
+                    // 게임 종료 확인
+                    if (roomData.gameState.status === 'finished' && roomData.gameState.winner) {
+                        showGameResult(roomData.gameState.winner, roomData.players);
+                    }
                     return;
                 }
 
@@ -1351,6 +1356,28 @@
             const msgBox = document.getElementById('message');
             msgBox.textContent = text;
             msgBox.className = 'message-box' + (type ? ' ' + type : '');
+        }
+
+        function showGameResult(winnerId, playersData) {
+            const winnerData = playersData[winnerId];
+            const winnerName = winnerData ? winnerData.name : '승자';
+            const isMe = winnerId === myPlayerId;
+
+            let resultHtml = `
+                <div style="text-align:center;margin-bottom:20px;">
+                    <h2>🏆 게임 종료!</h2>
+                    <div style="font-size:1.5rem;margin:15px 0;color:#fbbf24;">
+                        ${isMe ? '🎉 축하합니다! 당신이 승리했습니다!' : `🎊 ${winnerName}님이 승리했습니다!`}
+                    </div>
+                </div>
+                <button class="btn btn-primary" style="width:100%;margin-top:15px;" onclick="location.reload()">
+                    🔄 다시 하기
+                </button>
+            `;
+
+            document.getElementById('message').innerHTML = resultHtml;
+            document.getElementById('message').style.minWidth = '280px';
+            document.getElementById('action-buttons').style.display = 'none';
         }
 
         function canPlayCard(card) {
@@ -2041,8 +2068,17 @@
                 return;
             }
 
+            // 승리 조건 확인 (손패 0장)
+            let gameStatus = gameState.status || 'playing';
+            let winner = null;
+
+            if (newHand.length === 0) {
+                gameStatus = 'finished';
+                winner = myPlayerId;
+            }
+
             // Firebase 업데이트
-            updateGameState({
+            const updates = {
                 deck: newDeck,
                 discardPile: newDiscardPile,
                 currentPlayerIndex: nextPlayerIndex,
@@ -2052,7 +2088,14 @@
                 currentSuit: newCurrentSuit,
                 skipTurns: 0,
                 [`hands/${myPlayerId}`]: newHand
-            });
+            };
+
+            if (winner) {
+                updates.status = 'finished';
+                updates.winner = winner;
+            }
+
+            updateGameState(updates);
 
             selectedCards = [];
         };
