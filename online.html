@@ -621,10 +621,20 @@
         }
 
         /* 상대방 카드 영역 */
+        .opponent-area {
+            min-width: auto !important;
+        }
+
         .opponent-area .cards-row {
-            max-width: 120px;
-            flex-wrap: wrap;
-            gap: 2px;
+            max-width: 100px !important;
+            flex-wrap: wrap !important;
+            gap: 3px !important;
+            justify-content: flex-start !important;
+        }
+
+        .opponent-area .opponent-card {
+            margin-left: 0 !important;
+            margin-bottom: 3px;
         }
 
         .version-badge {
@@ -680,7 +690,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v1.3.0 (2024-12-29)</div>
+        <div class="version-badge">v1.3.1</div>
 
         <div id="main-menu">
             <div class="input-group">
