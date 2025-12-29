@@ -579,6 +579,29 @@
             cursor: pointer;
         }
 
+        .deck.highlight {
+            box-shadow: 0 0 20px #4ade80 !important;
+            border: 4px solid #4ade80 !important;
+            animation: pulse-green 1s infinite;
+        }
+
+        @keyframes pulse-green {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 20px #4ade80;
+            }
+
+            50% {
+                transform: scale(1.1);
+                box-shadow: 0 0 40px #4ade80;
+            }
+
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 20px #4ade80;
+            }
+        }
+
         .discard-pile {
             display: flex;
             align-items: center;
@@ -723,7 +746,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v1.7.5</div>
+        <div class="version-badge">v1.7.6</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -1473,6 +1496,20 @@
                     </div>
                 `;
             }).join('');
+
+            // 낼 카드가 없으면 덱 하이라이트
+            const deckEl = document.querySelector('.deck');
+            if (deckEl) deckEl.classList.remove('highlight');
+
+            if (currentPlayer && currentPlayer.isMe) {
+                const myHandInfo = players.find(p => p.isMe);
+                if (myHandInfo && myHandInfo.hand) {
+                    const hasPlayable = myHandInfo.hand.some(card => canPlayCard(card));
+                    if (!hasPlayable && deckEl) {
+                        deckEl.classList.add('highlight');
+                    }
+                }
+            }
 
             // 액션 버튼
             document.getElementById('action-buttons').style.display = selectedCards.length > 0 ? 'flex' : 'none';
