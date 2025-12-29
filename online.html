@@ -723,7 +723,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v1.7.1</div>
+        <div class="version-badge">v1.7.2</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -1424,7 +1424,7 @@
                                 ${p.name} (나)
                                 <span class="card-count">${p.hand.length}장</span>
                             </div>
-                            <div class="cards-row">
+                            <div class="cards-row" style="${p.hand.length > 7 ? 'flex-wrap:wrap;justify-content:center;height:auto;' : ''}">
                                 ${p.hand.map((card, i) => {
                         const playable = isMyTurn && canPlayCard(card);
                         const selected = selectedCards.includes(i);
@@ -1432,7 +1432,8 @@
                         const valueClass = isNormalSuit ? `val-${card.value}` : '';
                         return `
                                         <div class="card ${card.suit} ${valueClass} ${playable ? 'playable' : ''} ${selected ? 'selected' : ''}"
-                                             onclick="toggleCardSelection(${i})">
+                                             onclick="toggleCardSelection(${i})"
+                                             style="${p.hand.length > 7 ? 'margin-bottom:-40px;' : ''}">
                                         </div>
                                     `;
                     }).join('')}
@@ -1455,10 +1456,10 @@
                 }
             });
 
-            // 버린 카드 표시 (최근 5장만)
+            // 버린 카드 표시 (최근 3장만)
             const discardEl = document.getElementById('discard-cards');
-            discardEl.innerHTML = gameState.discardPile.slice(-5).map((card, i) => {
-                const isTop = i === (gameState.discardPile.slice(-5).length - 1);
+            discardEl.innerHTML = gameState.discardPile.slice(-3).map((card, i) => {
+                const isTop = i === (gameState.discardPile.slice(-3).length - 1);
 
                 let valueClass = card.value;
                 if (card.symbol) valueClass += ` ${card.symbol}`;
@@ -1468,7 +1469,7 @@
 
                 return `
                     <div class="card ${card.suit} ${valueClass}" 
-                         style="width:${60}px;height:${85}px;margin-left:${i === 0 ? 0 : -40}px;z-index:${i};box-shadow:-2px 0 5px rgba(0,0,0,0.3);">
+                         style="width:60px;height:85px;margin-left:${i === 0 ? 0 : -45}px;position:relative;z-index:${i};box-shadow:-2px 0 5px rgba(0,0,0,0.3);">
                     </div>
                 `;
             }).join('');
