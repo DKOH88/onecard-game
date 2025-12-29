@@ -690,7 +690,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v1.4.0</div>
+        <div class="version-badge">v1.4.1</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -1388,28 +1388,36 @@
             if (!currentPlayer || !currentPlayer.isMe) return;
 
             const card = currentPlayer.hand[index];
-            if (!canPlayCard(card)) return;
 
             const idx = selectedCards.indexOf(index);
             if (idx > -1) {
+                // 이미 선택된 카드 해제
                 selectedCards.splice(idx, 1);
             } else {
-                // 같은 숫자 카드만 선택 가능
                 if (selectedCards.length > 0) {
+                    // 이미 선택된 카드가 있으면 같은 숫자만 허용
                     const firstCard = currentPlayer.hand[selectedCards[0]];
                     if (card.value !== firstCard.value) {
                         alert('같은 숫자의 카드만 함께 낼 수 있습니다!');
                         return;
                     }
+                    selectedCards.push(index);
+                } else {
+                    // 첫 번째 카드는 플레이 가능해야 함
+                    if (!canPlayCard(card)) return;
+                    selectedCards.push(index);
                 }
-                selectedCards.push(index);
             }
             render();
         }
 
         function clearSelection() {
             selectedCards = [];
-            render();
+            if (isSinglePlayer) {
+                renderSingle();
+            } else {
+                render();
+            }
         }
 
         // 온라인 카드 내기
