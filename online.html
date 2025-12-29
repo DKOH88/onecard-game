@@ -753,7 +753,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.0.0</div>
+        <div class="version-badge">v2.0.1</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -2470,13 +2470,17 @@
             if (!myPlayer) return;
             const cardsToDraw = gameState.attackStack > 0 ? gameState.attackStack : 1;
             const newDeck = [...gameState.deck];
+            let newDiscardPile = [...gameState.discardPile];
             const newHand = [...myPlayer.hand];
             for (let i = 0; i < cardsToDraw; i++) {
                 if (newDeck.length === 0) {
-                    const topCard = gameState.discardPile[gameState.discardPile.length - 1];
-                    const reshuffled = gameState.discardPile.slice(0, -1);
+                    if (newDiscardPile.length <= 1) break; // 섞을 카드가 없으면 중단
+
+                    const topCard = newDiscardPile[newDiscardPile.length - 1];
+                    const reshuffled = newDiscardPile.slice(0, -1);
                     shuffle(reshuffled);
                     newDeck.push(...reshuffled);
+                    newDiscardPile = [topCard]; // 버린 카드 더미 초기화 (맨 위 1장만 남김)
                 }
                 if (newDeck.length > 0) newHand.push(newDeck.pop());
             }
@@ -2492,6 +2496,7 @@
 
             const updates = {
                 deck: newDeck,
+                discardPile: newDiscardPile,
                 currentPlayerIndex: nextPlayerIndex,
                 attackStack: 0,
                 attackType: null,
