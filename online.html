@@ -690,7 +690,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v1.6.7</div>
+        <div class="version-badge">v1.6.8</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -2186,7 +2186,7 @@
                 newAttackType = null;
             } else if (value === 'Q') {
                 // 2인 플레이에서는 Q가 J처럼 1턴 스킵으로 작동
-                if (totalPlayers === 2) {
+                if (players.length === 2) {
                     newSkipTurns += 1 * count;
                 } else if (count % 2 === 1) {
                     newDirection *= -1;
