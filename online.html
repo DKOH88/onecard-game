@@ -651,8 +651,29 @@
                 <label>닉네임</label>
                 <input type="text" id="nickname-input" placeholder="닉네임을 입력하세요" maxlength="10">
             </div>
+
+            <p style="text-align:center; margin: 15px 0 5px; font-weight:bold; color:#4ade80;">온라인 멀티플레이</p>
             <button class="btn btn-primary" onclick="createRoom()">🏠 방 만들기</button>
             <button class="btn btn-secondary" onclick="showJoinForm()">🚪 방 참가하기</button>
+
+            <p style="text-align:center; margin: 20px 0 5px; font-weight:bold; color:#fbbf24;">싱글 플레이어</p>
+            <button class="btn" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#000;"
+                onclick="showSinglePlayerForm()">🤖 AI와 대전</button>
+        </div>
+
+        <div id="single-player-form" class="hidden">
+            <div class="input-group">
+                <label>AI 상대 수 (1~5명)</label>
+                <select id="ai-count-select" style="width:100%;padding:12px;border-radius:10px;font-size:1rem;">
+                    <option value="1">1명 (1:1 대전)</option>
+                    <option value="2">2명</option>
+                    <option value="3" selected>3명 (추천)</option>
+                    <option value="4">4명</option>
+                    <option value="5">5명 (최대)</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" onclick="startSinglePlayer()">🎮 게임 시작</button>
+            <button class="btn btn-secondary" onclick="hideSinglePlayerForm()">취소</button>
         </div>
 
         <div id="join-form" class="hidden">
@@ -746,6 +767,21 @@
         let players = [];
         let selectedCards = [];
 
+        // 싱글 플레이어 상태
+        let isSinglePlayer = false;
+        let singlePlayerState = {
+            deck: [],
+            discardPile: [],
+            currentPlayerIndex: 0,
+            direction: 1,
+            attackStack: 0,
+            attackType: null,
+            currentSuit: null,
+            skipTurns: 0
+        };
+        const BANKRUPT_LIMIT = 15;
+        const AI_NAMES = ['🤖 AI-1', '🦾 AI-2', '🔧 AI-3', '⚙️ AI-4', '🛠️ AI-5'];
+
         const suitSymbols = {
             'spade': '♠', 'heart': '♥', 'diamond': '♦', 'club': '♣'
         };
@@ -762,6 +798,98 @@
 
         function generatePlayerId() {
             return 'player_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        // 싱글 플레이어 함수
+        function showSinglePlayerForm() {
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById('single-player-form').classList.remove('hidden');
+        }
+
+        function hideSinglePlayerForm() {
+            document.getElementById('single-player-form').classList.add('hidden');
+            document.getElementById('main-menu').classList.remove('hidden');
+        }
+
+        function startSinglePlayer() {
+            myNickname = document.getElementById('nickname-input').value.trim() || '플레이어';
+            const aiCount = parseInt(document.getElementById('ai-count-select').value);
+
+            isSinglePlayer = true;
+            myPlayerId = 'human';
+
+            // 플레이어 배열 생성
+            players = [{
+                id: 'human',
+                name: '👤 ' + myNickname,
+                hand: [],
+                isMe: true,
+                isHuman: true,
+                isBankrupt: false,
+                rank: null,
+                slot: 'bottom'
+            }];
+
+            // AI 플레이어 추가
+            const totalPlayers = aiCount + 1;
+            const slots = {
+                2: ['bottom', 'top'],
+                3: ['bottom', 'left', 'top'],
+                4: ['bottom', 'left', 'top', 'right'],
+                5: ['bottom', 'left', 'top-left', 'top-right', 'right'],
+                6: ['bottom', 'left', 'top-left', 'top', 'top-right', 'right']
+            };
+
+            for (let i = 0; i < aiCount; i++) {
+                players.push({
+                    id: 'ai_' + i,
+                    name: AI_NAMES[i],
+                    hand: [],
+                    isMe: false,
+                    isHuman: false,
+                    isBankrupt: false,
+                    rank: null,
+                    slot: slots[totalPlayers][i + 1]
+                });
+            }
+
+            // 덱 생성 및 셔플
+            singlePlayerState.deck = createDeck();
+            shuffle(singlePlayerState.deck);
+
+            // 카드 분배 (5장씩)
+            players.forEach(p => {
+                p.hand = [];
+                for (let i = 0; i < 5; i++) {
+                    p.hand.push(singlePlayerState.deck.pop());
+                }
+            });
+
+            // 첫 카드
+            let firstCard;
+            do {
+                firstCard = singlePlayerState.deck.pop();
+                if (isSpecialCard(firstCard)) {
+                    singlePlayerState.deck.unshift(firstCard);
+                } else {
+                    break;
+                }
+            } while (true);
+
+            singlePlayerState.discardPile = [firstCard];
+            singlePlayerState.currentSuit = firstCard.suit;
+            singlePlayerState.currentPlayerIndex = 0;
+            singlePlayerState.direction = 1;
+            singlePlayerState.attackStack = 0;
+            singlePlayerState.attackType = null;
+            singlePlayerState.skipTurns = 0;
+
+            // gameState 동기화
+            gameState = singlePlayerState;
+
+            showGameScreen();
+            renderSingle();
+            setMessage('게임 시작! 당신의 턴입니다.');
         }
 
         // 로비 함수
@@ -1402,6 +1530,503 @@
             const gameStateRef = roomRef.child('gameState');
             gameStateRef.update(updates);
         }
+
+        // ==================== 싱글 플레이어 전용 함수들 ====================
+
+        function renderSingle() {
+            if (!isSinglePlayer) return render();
+
+            document.getElementById('direction').textContent = singlePlayerState.direction === 1 ? '⟳ 시계' : '⟲ 반시계';
+            document.getElementById('deck-count').textContent = `덱: ${singlePlayerState.deck.length}`;
+
+            // 슬롯 초기화
+            ['top', 'left', 'right', 'bottom', 'top-left', 'top-right'].forEach(slot => {
+                const el = document.getElementById('slot-' + slot);
+                if (el) el.innerHTML = '';
+            });
+
+            const currentPlayer = players[singlePlayerState.currentPlayerIndex];
+            document.getElementById('turn-text').textContent = currentPlayer ? `${currentPlayer.name}의 턴` : '';
+
+            // 플레이어 렌더링
+            players.forEach((p, idx) => {
+                const slotEl = document.getElementById('slot-' + p.slot);
+                if (!slotEl) return;
+
+                const isCurrent = singlePlayerState.currentPlayerIndex === idx;
+
+                if (p.isHuman) {
+                    // 내 카드 (앞면)
+                    slotEl.innerHTML = `
+                        <div class="player-area ${isCurrent ? 'current-turn' : ''} ${p.isBankrupt ? 'bankrupt' : ''}">
+                            <div class="player-label">
+                                ${p.name}
+                                <span class="card-count">${p.hand.length}장</span>
+                                ${p.isBankrupt ? '<span style="background:#ef4444;padding:2px 6px;border-radius:5px;font-size:0.8rem;">파산</span>' : ''}
+                                ${p.rank ? `<span style="background:#4ade80;padding:2px 6px;border-radius:5px;font-size:0.8rem;">${p.rank}등</span>` : ''}
+                            </div>
+                            <div class="cards-row">
+                                ${p.rank ? '' : p.hand.map((card, i) => {
+                        const playable = isCurrent && canPlayCardSingle(card);
+                        const selected = selectedCards.includes(i);
+                        const isNormalSuit = ['spade', 'heart', 'diamond', 'club'].includes(card.suit);
+                        const valueClass = isNormalSuit ? `val-${card.value}` : '';
+                        return `
+                                        <div class="card ${card.suit} ${valueClass} ${playable ? 'playable' : ''} ${selected ? 'selected' : ''}"
+                                             onclick="toggleCardSelectionSingle(${i})">
+                                        </div>
+                                    `;
+                    }).join('')}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // AI 카드 (뒷면)
+                    slotEl.innerHTML = `
+                        <div class="player-area ${isCurrent ? 'current-turn' : ''} ${p.isBankrupt ? 'bankrupt' : ''}">
+                            <div class="player-label">
+                                ${p.name}
+                                <span class="card-count">${p.hand.length}장</span>
+                                ${p.isBankrupt ? '<span style="background:#ef4444;padding:2px 6px;border-radius:5px;font-size:0.8rem;">파산</span>' : ''}
+                                ${p.rank ? `<span style="background:#4ade80;padding:2px 6px;border-radius:5px;font-size:0.8rem;">${p.rank}등</span>` : ''}
+                            </div>
+                            <div class="cards-row">
+                                ${p.rank ? '' : p.hand.map(() => `<div class="card card-back"></div>`).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+
+            // 버린 카드 더미
+            const discardEl = document.getElementById('discard-cards');
+            const topCards = singlePlayerState.discardPile.slice(-3);
+            discardEl.innerHTML = topCards.map((card, idx) => {
+                const isTop = idx === topCards.length - 1;
+                const isNormalSuit = ['spade', 'heart', 'diamond', 'club'].includes(card.suit);
+                const valueClass = isNormalSuit ? `val-${card.value}` : '';
+                const opacity = isTop ? '1' : (idx === topCards.length - 2 ? '0.7' : '0.4');
+                return `
+                    <div class="card ${card.suit} ${valueClass}" 
+                         style="width:${isTop ? 60 : 45}px;height:${isTop ? 85 : 65}px;opacity:${opacity};cursor:default;">
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('action-buttons').style.display = selectedCards.length > 0 ? 'flex' : 'none';
+        }
+
+        function canPlayCardSingle(card) {
+            if (singlePlayerState.attackStack > 0) {
+                return canDefendWithSingle(card);
+            }
+            const topCard = singlePlayerState.discardPile[singlePlayerState.discardPile.length - 1];
+            if (card.suit === 'black-joker' || card.suit === 'color-joker') return true;
+            if (card.suit === singlePlayerState.currentSuit) return true;
+            if (card.value === topCard.value) return true;
+            return false;
+        }
+
+        function canDefendWithSingle(card) {
+            const attackType = singlePlayerState.attackType;
+            if (!attackType) return true;
+
+            if (attackType === '2') {
+                if (card.value === '2') return true;
+                if (card.value === 'A' && card.suit === singlePlayerState.currentSuit) return true;
+                if (card.suit === 'black-joker' || card.suit === 'color-joker') return true;
+                return false;
+            }
+            if (attackType === 'A') {
+                if (card.value === 'A') return true;
+                if (card.suit === 'black-joker' || card.suit === 'color-joker') return true;
+                return false;
+            }
+            if (attackType === 'black-joker' || attackType === 'color-joker') {
+                if (card.value === 'A' && card.suit === 'spade') return true;
+                if (card.suit === 'black-joker' || card.suit === 'color-joker') return true;
+                return false;
+            }
+            return false;
+        }
+
+        function toggleCardSelectionSingle(index) {
+            const currentPlayer = players[singlePlayerState.currentPlayerIndex];
+            if (!currentPlayer || !currentPlayer.isHuman) return;
+
+            const card = currentPlayer.hand[index];
+            if (!canPlayCardSingle(card)) return;
+
+            const idx = selectedCards.indexOf(index);
+            if (idx > -1) {
+                selectedCards.splice(idx, 1);
+            } else {
+                if (selectedCards.length > 0) {
+                    const firstCard = currentPlayer.hand[selectedCards[0]];
+                    if (card.value !== firstCard.value) {
+                        alert('같은 숫자의 카드만 함께 낼 수 있습니다!');
+                        return;
+                    }
+                }
+                selectedCards.push(index);
+            }
+            renderSingle();
+        }
+
+        function playSelectedCardsOnline() {
+            if (isSinglePlayer) {
+                playSelectedCardsSingle();
+            } else {
+                playSelectedCardsOnlineOriginal();
+            }
+        }
+
+        function playSelectedCardsSingle() {
+            if (selectedCards.length === 0) return;
+
+            const player = players.find(p => p.isHuman);
+            const cards = selectedCards.map(i => player.hand[i]);
+
+            selectedCards.sort((a, b) => b - a).forEach(i => player.hand.splice(i, 1));
+            cards.forEach(card => singlePlayerState.discardPile.push(card));
+
+            const lastCard = cards[cards.length - 1];
+            if (lastCard.suit !== 'black-joker' && lastCard.suit !== 'color-joker') {
+                singlePlayerState.currentSuit = lastCard.suit;
+            }
+
+            handleSpecialCardsSingle(cards);
+            selectedCards = [];
+
+            if (player.hand.length === 0) {
+                const currentRank = players.filter(p => p.rank !== null).length + 1;
+                player.rank = currentRank;
+                setMessage(`🎉 ${player.name}님이 ${currentRank}등으로 탈출!`);
+                renderSingle();
+                if (isGameOverSingle()) {
+                    setTimeout(endGameSingle, 1500);
+                } else {
+                    setTimeout(nextTurnSingle, 1500);
+                }
+                return;
+            }
+
+            if (cards[0].value === '7' && cards[0].suit !== 'black-joker' && cards[0].suit !== 'color-joker') {
+                document.getElementById('suit-selector').style.display = 'flex';
+                return;
+            }
+
+            nextTurnSingle();
+        }
+
+        function handleSpecialCardsSingle(cards) {
+            const value = cards[0].value;
+            const count = cards.length;
+
+            if (value === '2') {
+                singlePlayerState.attackStack += 2 * count;
+                singlePlayerState.attackType = '2';
+                setMessage(`⚔️ +${2 * count}장! (누적: ${singlePlayerState.attackStack}장)`, 'attack');
+            } else if (value === 'A') {
+                singlePlayerState.attackStack += 3 * count;
+                singlePlayerState.attackType = 'A';
+                setMessage(`⚔️ +${3 * count}장! (누적: ${singlePlayerState.attackStack}장)`, 'attack');
+            } else if (cards[0].suit === 'black-joker') {
+                singlePlayerState.attackStack += 5 * count;
+                singlePlayerState.attackType = 'black-joker';
+                setMessage(`🖤 +${5 * count}장!`, 'attack');
+            } else if (cards[0].suit === 'color-joker') {
+                singlePlayerState.attackStack += 7 * count;
+                singlePlayerState.attackType = 'color-joker';
+                setMessage(`🌈 +${7 * count}장!`, 'attack');
+            } else if (value === 'K') {
+                singlePlayerState.skipTurns += 2 * count;
+                setMessage(`👑 ${2 * count}턴 스킵!`);
+            } else if (value === 'Q') {
+                if (count % 2 === 1) {
+                    singlePlayerState.direction *= -1;
+                    setMessage(`👸 방향 전환! ${singlePlayerState.direction === 1 ? '⟳' : '⟲'}`);
+                }
+            } else if (value === 'J') {
+                singlePlayerState.skipTurns += 1 * count;
+                setMessage(`🎭 ${count}턴 스킵!`);
+            }
+        }
+
+        function selectSuitOnline(suit) {
+            if (isSinglePlayer) {
+                singlePlayerState.currentSuit = suit;
+                document.getElementById('suit-selector').style.display = 'none';
+                setMessage(`♻️ ${suitSymbols[suit]} 선택!`);
+                nextTurnSingle();
+            } else {
+                selectSuitOnlineOriginal(suit);
+            }
+        }
+
+        function drawCardOnline() {
+            if (isSinglePlayer) {
+                drawCardSingle();
+            } else {
+                drawCardOnlineOriginal();
+            }
+        }
+
+        function drawCardSingle() {
+            const player = players.find(p => p.isHuman);
+            if (!player || player.isBankrupt) return;
+            if (singlePlayerState.currentPlayerIndex !== players.indexOf(player)) {
+                alert('당신의 턴이 아닙니다!');
+                return;
+            }
+            drawCardsForPlayerSingle(player);
+            nextTurnSingle();
+        }
+
+        function drawCardsForPlayerSingle(player) {
+            const count = singlePlayerState.attackStack > 0 ? singlePlayerState.attackStack : 1;
+
+            for (let i = 0; i < count; i++) {
+                if (singlePlayerState.deck.length === 0) reshuffleDeckSingle();
+                if (singlePlayerState.deck.length > 0) player.hand.push(singlePlayerState.deck.pop());
+            }
+
+            if (singlePlayerState.attackStack > 0) {
+                setMessage(`💥 ${player.name} ${singlePlayerState.attackStack}장 뽑음!`);
+                singlePlayerState.attackStack = 0;
+                singlePlayerState.attackType = null;
+            } else {
+                setMessage(`📥 ${player.name} 1장 뽑음`);
+            }
+
+            if (player.hand.length > BANKRUPT_LIMIT) {
+                player.isBankrupt = true;
+                singlePlayerState.deck.push(...player.hand);
+                player.hand = [];
+                shuffle(singlePlayerState.deck);
+                setMessage(`💀 ${player.name} 파산!`, 'attack');
+            }
+        }
+
+        function reshuffleDeckSingle() {
+            if (singlePlayerState.discardPile.length <= 1) return;
+            const topCard = singlePlayerState.discardPile.pop();
+            shuffle(singlePlayerState.discardPile);
+            singlePlayerState.deck.push(...singlePlayerState.discardPile);
+            singlePlayerState.discardPile = [topCard];
+        }
+
+        function isGameOverSingle() {
+            const remaining = players.filter(p => !p.isBankrupt && p.rank === null);
+            return remaining.length <= 1;
+        }
+
+        function nextTurnSingle() {
+            const activePlayers = players.filter(p => !p.isBankrupt && p.rank === null);
+
+            if (activePlayers.length <= 1) {
+                if (activePlayers.length === 1 && activePlayers[0].rank === null) {
+                    const nextRank = players.filter(p => p.rank !== null).length + 1;
+                    activePlayers[0].rank = nextRank;
+                }
+                endGameSingle();
+                return;
+            }
+
+            while (singlePlayerState.skipTurns > 0) {
+                singlePlayerState.currentPlayerIndex = (singlePlayerState.currentPlayerIndex + singlePlayerState.direction + players.length) % players.length;
+                while (players[singlePlayerState.currentPlayerIndex].isBankrupt || players[singlePlayerState.currentPlayerIndex].rank !== null) {
+                    singlePlayerState.currentPlayerIndex = (singlePlayerState.currentPlayerIndex + singlePlayerState.direction + players.length) % players.length;
+                }
+                singlePlayerState.skipTurns--;
+            }
+
+            singlePlayerState.currentPlayerIndex = (singlePlayerState.currentPlayerIndex + singlePlayerState.direction + players.length) % players.length;
+
+            let safety = 0;
+            while ((players[singlePlayerState.currentPlayerIndex].isBankrupt || players[singlePlayerState.currentPlayerIndex].rank !== null) && safety < players.length) {
+                singlePlayerState.currentPlayerIndex = (singlePlayerState.currentPlayerIndex + singlePlayerState.direction + players.length) % players.length;
+                safety++;
+            }
+
+            if (isGameOverSingle()) {
+                const survivor = players.find(p => !p.isBankrupt && p.rank === null);
+                if (survivor) survivor.rank = players.filter(p => p.rank !== null).length + 1;
+                endGameSingle();
+                return;
+            }
+
+            renderSingle();
+
+            const cp = players[singlePlayerState.currentPlayerIndex];
+            if (cp.isHuman) {
+                if (singlePlayerState.attackStack > 0) {
+                    setMessage(`⚔️ ${singlePlayerState.attackStack}장 공격! 방어 또는 뽑기`, 'attack');
+                } else {
+                    setMessage('당신의 턴');
+                }
+            } else {
+                const delay = 1000 + Math.random() * 2000;
+                setTimeout(aiTurnSingle, delay);
+            }
+        }
+
+        function aiTurnSingle() {
+            const player = players[singlePlayerState.currentPlayerIndex];
+            if (player.isBankrupt || player.isHuman) return;
+
+            let playable = [];
+            for (let i = 0; i < player.hand.length; i++) {
+                if (canPlayCardSingle(player.hand[i])) {
+                    playable.push({ index: i, card: player.hand[i] });
+                }
+            }
+
+            if (playable.length === 0) {
+                drawCardsForPlayerSingle(player);
+                nextTurnSingle();
+                return;
+            }
+
+            // 같은 숫자 카드 묶기
+            const groups = {};
+            playable.forEach(pc => {
+                const val = pc.card.value;
+                if (!groups[val]) groups[val] = [];
+                groups[val].push(pc);
+            });
+
+            let bestGroup = null;
+            for (let val in groups) {
+                if (!bestGroup || groups[val].length > bestGroup.length) {
+                    bestGroup = groups[val];
+                }
+            }
+
+            const indices = bestGroup.map(pc => pc.index).sort((a, b) => b - a);
+            const cards = indices.map(i => player.hand[i]);
+
+            indices.forEach(i => player.hand.splice(i, 1));
+            cards.forEach(card => singlePlayerState.discardPile.push(card));
+
+            const lastCard = cards[cards.length - 1];
+            if (lastCard.suit !== 'black-joker' && lastCard.suit !== 'color-joker') {
+                singlePlayerState.currentSuit = lastCard.suit;
+            }
+
+            // AI가 7을 냈을 때 무늬 선택
+            if (lastCard.value === '7') {
+                const suitCounts = {};
+                player.hand.forEach(c => {
+                    if (c.suit !== 'black-joker' && c.suit !== 'color-joker') {
+                        suitCounts[c.suit] = (suitCounts[c.suit] || 0) + 1;
+                    }
+                });
+                let best = singlePlayerState.currentSuit, max = 0;
+                for (let s in suitCounts) {
+                    if (suitCounts[s] > max) { max = suitCounts[s]; best = s; }
+                }
+                singlePlayerState.currentSuit = best;
+            }
+
+            handleSpecialCardsSingle(cards);
+
+            if (player.hand.length === 0) {
+                const currentRank = players.filter(p => p.rank !== null).length + 1;
+                player.rank = currentRank;
+                setMessage(`🎊 ${player.name}님이 ${currentRank}등으로 탈출!`);
+                renderSingle();
+                if (isGameOverSingle()) {
+                    setTimeout(endGameSingle, 1500);
+                } else {
+                    setTimeout(nextTurnSingle, 1500);
+                }
+                return;
+            }
+
+            nextTurnSingle();
+        }
+
+        function endGameSingle() {
+            renderSingle();
+            const sortedPlayers = [...players].sort((a, b) => {
+                if (a.rank !== null && b.rank !== null) return a.rank - b.rank;
+                if (a.rank !== null) return -1;
+                if (b.rank !== null) return 1;
+                return 0;
+            });
+
+            let rankHtml = '<div style="text-align:center;margin-bottom:20px;"><h2>🏆 게임 결과</h2></div>';
+            rankHtml += '<div style="background:rgba(0,0,0,0.3);padding:15px;border-radius:10px;">';
+            sortedPlayers.forEach(p => {
+                let status = p.rank ? `${p.rank}등` : (p.isBankrupt ? '파산' : '진행중');
+                let color = p.rank === 1 ? '#fbbf24' : (p.isBankrupt ? '#f87171' : 'white');
+                rankHtml += `<div style="padding:10px;border-bottom:1px solid rgba(255,255,255,0.1);color:${color};">
+                    <span style="font-weight:bold;width:50px;display:inline-block;">${status}</span>
+                    <span>${p.name}</span>
+                </div>`;
+            });
+            rankHtml += '</div>';
+            rankHtml += '<button class="btn btn-primary" style="margin-top:20px;width:100%;" onclick="location.reload()">🔄 다시 하기</button>';
+
+            document.getElementById('message').innerHTML = rankHtml;
+            document.getElementById('message').style.minWidth = '300px';
+        }
+
+        // 원본 온라인 함수 백업 (이름 변경용)
+        const playSelectedCardsOnlineOriginal = function () {
+            // ... 기존 온라인 카드 내기 로직
+        };
+
+        const selectSuitOnlineOriginal = function (suit) {
+            document.getElementById('suit-selector').style.display = 'none';
+            if (window.pendingUpdate) {
+                const { newHand, newDiscardPile, newDeck, newAttackStack, newAttackType,
+                    newSkipTurns, newDirection, nextPlayerIndex } = window.pendingUpdate;
+                updateGameState({
+                    deck: newDeck,
+                    discardPile: newDiscardPile,
+                    currentPlayerIndex: nextPlayerIndex,
+                    direction: newDirection,
+                    attackStack: newAttackStack,
+                    attackType: newAttackType,
+                    currentSuit: suit,
+                    skipTurns: 0,
+                    [`hands/${myPlayerId}`]: newHand
+                });
+                window.pendingUpdate = null;
+            }
+        };
+
+        const drawCardOnlineOriginal = function () {
+            const currentPlayer = players[gameState.currentPlayerIndex];
+            if (!currentPlayer || !currentPlayer.isMe) {
+                alert('당신의 턴이 아닙니다!');
+                return;
+            }
+            const myPlayer = players.find(p => p.isMe);
+            if (!myPlayer) return;
+            const cardsToDraw = gameState.attackStack > 0 ? gameState.attackStack : 1;
+            const newDeck = [...gameState.deck];
+            const newHand = [...myPlayer.hand];
+            for (let i = 0; i < cardsToDraw; i++) {
+                if (newDeck.length === 0) {
+                    const topCard = gameState.discardPile[gameState.discardPile.length - 1];
+                    const reshuffled = gameState.discardPile.slice(0, -1);
+                    shuffle(reshuffled);
+                    newDeck.push(...reshuffled);
+                }
+                if (newDeck.length > 0) newHand.push(newDeck.pop());
+            }
+            let nextPlayerIndex = (gameState.currentPlayerIndex + gameState.direction + players.length) % players.length;
+            updateGameState({
+                deck: newDeck,
+                currentPlayerIndex: nextPlayerIndex,
+                attackStack: 0,
+                attackType: null,
+                [`hands/${myPlayerId}`]: newHand
+            });
+        };
     </script>
 </body>
 
