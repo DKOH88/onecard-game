@@ -552,22 +552,20 @@
             position: fixed !important;
             bottom: 30px;
             left: 30px;
-            width: 80px;
-            /* 터치 쉽도록 조금 키움 */
-            height: 110px;
+            width: 40px;
+            height: 55px;
             z-index: 100;
             cursor: pointer;
         }
 
-        /* 덱이 먹는 버튼임을 알려주는 텍스트 추가 가능 (선택 사항) */
         .deck::after {
             content: '카드 받기';
             position: absolute;
-            bottom: -25px;
+            bottom: -18px;
             left: 50%;
             transform: translateX(-50%);
             color: white;
-            font-size: 14px;
+            font-size: 10px;
             white-space: nowrap;
             text-shadow: 1px 1px 2px black;
         }
@@ -749,7 +747,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v1.7.13</div>
+        <div class="version-badge">v1.7.14</div>
 
         <div id="main-menu">
             <div class="input-group">
