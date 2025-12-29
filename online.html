@@ -690,7 +690,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v1.6.3</div>
+        <div class="version-badge">v1.6.4</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -2083,15 +2083,25 @@
 
         // 원본 온라인 함수 백업 (이름 변경용)
         const playSelectedCardsOnlineOriginal = function () {
-            if (selectedCards.length === 0) return;
+            console.log('playSelectedCardsOnlineOriginal 호출됨, selectedCards:', selectedCards.length);
+
+            if (selectedCards.length === 0) {
+                console.log('선택된 카드 없음');
+                return;
+            }
 
             const myPlayer = players.find(p => p.isMe);
-            if (!myPlayer) return;
+            if (!myPlayer) {
+                console.log('myPlayer not found');
+                return;
+            }
 
             // 내 턴인지 확인
             const currentPlayer = players[gameState.currentPlayerIndex];
+            console.log('currentPlayerIndex:', gameState.currentPlayerIndex, 'isMe:', currentPlayer?.isMe);
+
             if (!currentPlayer || !currentPlayer.isMe) {
-                alert('당신의 턴이 아닙니다!');
+                alert('당신의 턴이 아닙니다! (현재 턴: ' + (currentPlayer?.name || '알 수 없음') + ')');
                 return;
             }
 
@@ -2106,10 +2116,13 @@
             let newAttackType = gameState.attackType;
             let newSkipTurns = gameState.skipTurns || 0;
             let newDirection = gameState.direction;
-            let newCurrentSuit = cardsToPlay[0].suit;
+
+            // 마지막 카드의 무늬 사용
+            const lastCard = cardsToPlay[cardsToPlay.length - 1];
+            let newCurrentSuit = lastCard.suit;
 
             // 조커는 이전 무늬 유지
-            if (cardsToPlay[0].suit === 'black-joker' || cardsToPlay[0].suit === 'color-joker') {
+            if (lastCard.suit === 'black-joker' || lastCard.suit === 'color-joker') {
                 newCurrentSuit = gameState.currentSuit;
             }
 
