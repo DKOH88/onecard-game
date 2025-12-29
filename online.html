@@ -690,7 +690,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v1.6.0</div>
+        <div class="version-badge">v1.6.1</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -838,6 +838,67 @@
             }
         }
 
+        function playShuffleSound() {
+            try {
+                // 카드 셔플 효과음 (빠른 노이즈)
+                for (let i = 0; i < 8; i++) {
+                    setTimeout(() => {
+                        const bufferSize = 2 * audioContext.sampleRate;
+                        const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+                        const output = noiseBuffer.getChannelData(0);
+                        for (let j = 0; j < bufferSize; j++) {
+                            output[j] = Math.random() * 2 - 1;
+                        }
+                        const whiteNoise = audioContext.createBufferSource();
+                        whiteNoise.buffer = noiseBuffer;
+
+                        const gainNode = audioContext.createGain();
+                        const filter = audioContext.createBiquadFilter();
+                        filter.type = 'highpass';
+                        filter.frequency.value = 1000;
+
+                        whiteNoise.connect(filter);
+                        filter.connect(gainNode);
+                        gainNode.connect(audioContext.destination);
+
+                        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+
+                        whiteNoise.start(audioContext.currentTime);
+                        whiteNoise.stop(audioContext.currentTime + 0.1);
+                    }, i * 80);
+                }
+            } catch (e) {
+                console.log('Shuffle sound not available');
+            }
+        }
+
+        function playGameOverSound() {
+            try {
+                // 슬픈 하강 멜로디
+                const notes = [440, 392, 349, 293]; // A4, G4, F4, D4
+                notes.forEach((freq, i) => {
+                    setTimeout(() => {
+                        const oscillator = audioContext.createOscillator();
+                        const gainNode = audioContext.createGain();
+
+                        oscillator.type = 'sine';
+                        oscillator.connect(gainNode);
+                        gainNode.connect(audioContext.destination);
+
+                        oscillator.frequency.setValueAtTime(freq, audioContext.currentTime);
+                        gainNode.gain.setValueAtTime(0.25, audioContext.currentTime);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
+
+                        oscillator.start(audioContext.currentTime);
+                        oscillator.stop(audioContext.currentTime + 0.4);
+                    }, i * 300);
+                });
+            } catch (e) {
+                console.log('Game over sound not available');
+            }
+        }
+
         // 싱글 플레이어 상태
         let isSinglePlayer = false;
         let singlePlayerState = {
@@ -927,6 +988,7 @@
             // 덱 생성 및 셔플
             singlePlayerState.deck = createDeck();
             shuffle(singlePlayerState.deck);
+            playShuffleSound(); // 셔플 사운드 재생
 
             // 카드 분배 (5장씩)
             players.forEach(p => {
@@ -1211,6 +1273,7 @@
                 // 덱 생성 및 셔플
                 const deck = createDeck();
                 shuffle(deck);
+                playShuffleSound(); // 셔플 사운드 재생
 
                 // 카드 분배 (5장씩)
                 const hands = {};
@@ -1394,11 +1457,16 @@
             const winnerName = winnerData ? winnerData.name : '승자';
             const isMe = winnerId === myPlayerId;
 
+            // 승패 사운드 재생
+            if (!isMe) {
+                playGameOverSound();
+            }
+
             let resultHtml = `
                 <div style="text-align:center;margin-bottom:20px;">
                     <h2>🏆 게임 종료!</h2>
                     <div style="font-size:1.5rem;margin:15px 0;color:#fbbf24;">
-                        ${isMe ? '🎉 축하합니다! 당신이 승리했습니다!' : `🎊 ${winnerName}님이 승리했습니다!`}
+                        ${isMe ? '🎉 축하합니다! 당신이 승리했습니다!' : `😢 ${winnerName}님이 승리했습니다...`}
                     </div>
                 </div>
                 <button class="btn btn-primary" style="width:100%;margin-top:15px;" onclick="location.reload()">
