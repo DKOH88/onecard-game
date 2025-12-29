@@ -690,7 +690,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v1.6.6</div>
+        <div class="version-badge">v1.6.7</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -1625,14 +1625,42 @@
             // 조커 공격 후 카드 먹으면 아무 카드나 낼 수 있음
             const wasJokerAttack = gameState.attackType === 'black-joker' || gameState.attackType === 'color-joker';
 
-            updateGameState({
+            // 파산 체크 (15장 초과)
+            const nextSuit = wasJokerAttack ? 'any' : gameState.currentSuit;
+            let isBankrupt = false;
+            let rank = null;
+            let winner = null;
+
+            if (newHand.length > 15) {
+                isBankrupt = true;
+                const activePlayers = players.filter(p => !p.isBankrupt && p.rank === null);
+                rank = activePlayers.length;
+                if (activePlayers.length - 1 === 1) {
+                    const survivor = activePlayers.find(p => p.id !== myPlayerId);
+                    if (survivor) winner = survivor.id;
+                }
+                alert('카드가 15장을 초과하여 파산했습니다! 😱');
+            }
+
+            const updates = {
                 deck: newDeck,
                 currentPlayerIndex: nextPlayerIndex,
                 attackStack: 0,
                 attackType: null,
-                currentSuit: wasJokerAttack ? 'any' : gameState.currentSuit,
+                currentSuit: nextSuit,
                 [`hands/${myPlayerId}`]: newHand
-            });
+            };
+
+            if (isBankrupt) {
+                updates[`players/${myPlayerId}/isBankrupt`] = true;
+                updates[`players/${myPlayerId}/rank`] = rank;
+            }
+            if (winner) {
+                updates.status = 'finished';
+                updates.winner = winner;
+            }
+
+            updateGameState(updates);
         }
 
         function updateGameState(updates) {
@@ -2132,6 +2160,9 @@
             if (lastCard.suit === 'black-joker' || lastCard.suit === 'color-joker') {
                 newCurrentSuit = gameState.currentSuit;
             }
+
+            console.log('카드 냄:', cardsToPlay.map(c => c.suit + c.value).join(', '),
+                'currentSuit 변경:', gameState.currentSuit, '->', newCurrentSuit);
 
             // 특수 카드 효과
             const value = cardsToPlay[0].value;
