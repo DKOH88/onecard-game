@@ -723,7 +723,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v1.7.0</div>
+        <div class="version-badge">v1.7.1</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -1455,17 +1455,20 @@
                 }
             });
 
-            // 버린 카드 더미
+            // 버린 카드 표시 (최근 5장만)
             const discardEl = document.getElementById('discard-cards');
-            const topCards = gameState.discardPile.slice(-3);
-            discardEl.innerHTML = topCards.map((card, idx) => {
-                const isTop = idx === topCards.length - 1;
-                const isNormalSuit = ['spade', 'heart', 'diamond', 'club'].includes(card.suit);
-                const valueClass = isNormalSuit ? `val-${card.value}` : '';
-                const opacity = isTop ? '1' : (idx === topCards.length - 2 ? '0.7' : '0.4');
+            discardEl.innerHTML = gameState.discardPile.slice(-5).map((card, i) => {
+                const isTop = i === (gameState.discardPile.slice(-5).length - 1);
+
+                let valueClass = card.value;
+                if (card.symbol) valueClass += ` ${card.symbol}`;
+
+                let opacity = 1;
+                // 이전 카드들은 조금 흐리게? 아니면 그냥 둠.
+
                 return `
                     <div class="card ${card.suit} ${valueClass}" 
-                         style="width:${isTop ? 60 : 45}px;height:${isTop ? 85 : 65}px;opacity:${opacity};cursor:default;">
+                         style="width:${60}px;height:${85}px;margin-left:${i === 0 ? 0 : -40}px;z-index:${i};box-shadow:-2px 0 5px rgba(0,0,0,0.3);">
                     </div>
                 `;
             }).join('');
@@ -2209,16 +2212,19 @@
             const value = cardsToPlay[0].value;
             const count = cardsToPlay.length;
 
+            const hasBlackJoker = cardsToPlay.some(c => c.suit === 'black-joker');
+            const hasColorJoker = cardsToPlay.some(c => c.suit === 'color-joker');
+
             if (value === '2') {
                 newAttackStack += 2 * count;
                 newAttackType = '2';
             } else if (value === 'A') {
                 newAttackStack += 3 * count;
                 newAttackType = 'A';
-            } else if (cardsToPlay[0].suit === 'black-joker') {
-                newAttackStack += 5 * count;
+            } else if (hasBlackJoker) {
+                newAttackStack += 5 * count; // 조커 공격
                 newAttackType = 'black-joker';
-            } else if (cardsToPlay[0].suit === 'color-joker') {
+            } else if (hasColorJoker) {
                 newAttackStack += 7 * count;
                 newAttackType = 'color-joker';
             } else if (value === 'K') {
