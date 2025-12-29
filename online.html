@@ -748,7 +748,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v1.8.4</div>
+        <div class="version-badge">v1.8.5</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -1439,13 +1439,9 @@
                 const isCurrent = gameState.currentPlayerIndex === idx;
 
                 if (p.isMe) {
-                    // 내 카드 (앞면)
+                    // 내 카드 (앞면) - 라벨을 카드 아래로 이동
                     slotEl.innerHTML = `
                         <div class="player-area ${isCurrent ? 'current-turn' : ''}">
-                            <div class="player-label">
-                                ${p.name} (나)
-                                <span class="card-count">${p.hand.length}장</span>
-                            </div>
                             <div class="cards-row" style="${p.hand.length > 7 ? 'flex-wrap:wrap;justify-content:center;height:auto;' : ''}">
                                 ${p.hand.map((card, i) => {
                         const playable = isMyTurn && canPlayCard(card);
@@ -1459,6 +1455,10 @@
                                         </div>
                                     `;
                     }).join('')}
+                            </div>
+                            <div class="player-label" style="margin-top:10px;">
+                                ${p.name} (나)
+                                <span class="card-count">${p.hand.length}장</span>
                             </div>
                         </div>
                     `;
@@ -1784,15 +1784,9 @@
                 const isCurrent = singlePlayerState.currentPlayerIndex === idx;
 
                 if (p.isHuman) {
-                    // 내 카드 (앞면)
+                    // 내 카드 (앞면) - 라벨을 카드 아래로 이동
                     slotEl.innerHTML = `
                         <div class="player-area ${isCurrent ? 'current-turn' : ''} ${p.isBankrupt ? 'bankrupt' : ''}">
-                            <div class="player-label">
-                                ${p.name}
-                                <span class="card-count">${p.hand.length}장</span>
-                                ${p.isBankrupt ? '<span style="background:#ef4444;padding:2px 6px;border-radius:5px;font-size:0.8rem;">파산</span>' : ''}
-                                ${p.rank ? `<span style="background:#4ade80;padding:2px 6px;border-radius:5px;font-size:0.8rem;">${p.rank}등</span>` : ''}
-                            </div>
                             <div class="cards-row">
                                 ${p.rank ? '' : p.hand.map((card, i) => {
                         const playable = isCurrent && canPlayCardSingle(card);
@@ -1805,6 +1799,12 @@
                                         </div>
                                     `;
                     }).join('')}
+                            </div>
+                            <div class="player-label" style="margin-top:10px;">
+                                ${p.name}
+                                <span class="card-count">${p.hand.length}장</span>
+                                ${p.isBankrupt ? '<span style="background:#ef4444;padding:2px 6px;border-radius:5px;font-size:0.8rem;">파산</span>' : ''}
+                                ${p.rank ? `<span style="background:#4ade80;padding:2px 6px;border-radius:5px;font-size:0.8rem;">${p.rank}등</span>` : ''}
                             </div>
                         </div>
                     `;
