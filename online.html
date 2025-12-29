@@ -527,12 +527,14 @@
         }
 
         .card.black-joker {
-            background: url('cards/black_joker.png') center/cover;
+            background: url('cards/black_joker.png') center/contain no-repeat;
+            background-color: white;
             color: transparent;
         }
 
         .card.color-joker {
-            background: url('cards/color_joker.png') center/cover;
+            background: url('cards/color_joker.png') center/contain no-repeat;
+            background-color: white;
             color: transparent;
         }
 
@@ -751,7 +753,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v1.9.8</div>
+        <div class="version-badge">v1.9.9</div>
 
         <div id="main-menu">
             <div class="input-group">
