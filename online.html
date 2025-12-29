@@ -608,13 +608,28 @@
 
         /* 상대방 카드 (작게) */
         .opponent-card {
-            width: 35px !important;
-            height: 50px !important;
-            margin-left: -20px !important;
+            width: 30px !important;
+            height: 42px !important;
+            margin-left: -18px !important;
+            font-size: 0.6rem !important;
         }
 
         .opponent-card:first-child {
             margin-left: 0 !important;
+        }
+
+        /* 상대방 카드 영역 */
+        .opponent-area .cards-row {
+            max-width: 120px;
+            flex-wrap: wrap;
+            gap: 2px;
+        }
+
+        .version-badge {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.5);
+            text-align: center;
+            margin-top: 20px;
         }
 
         .suit-selector {
@@ -663,6 +678,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
+        <div class="version-badge">v1.3.0 (2024-12-29)</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -1265,7 +1281,7 @@
                 } else {
                     // 상대 카드 (뒷면)
                     slotEl.innerHTML = `
-                        <div class="player-area ${isCurrent ? 'current-turn' : ''}">
+                        <div class="player-area opponent-area ${isCurrent ? 'current-turn' : ''}">
                             <div class="player-label">
                                 ${p.name}
                                 <span class="card-count">${p.hand.length}장</span>
@@ -1601,7 +1617,7 @@
                 } else {
                     // AI 카드 (뒷면)
                     slotEl.innerHTML = `
-                        <div class="player-area ${isCurrent ? 'current-turn' : ''} ${p.isBankrupt ? 'bankrupt' : ''}">
+                        <div class="player-area opponent-area ${isCurrent ? 'current-turn' : ''} ${p.isBankrupt ? 'bankrupt' : ''}">
                             <div class="player-label">
                                 ${p.name}
                                 <span class="card-count">${p.hand.length}장</span>
