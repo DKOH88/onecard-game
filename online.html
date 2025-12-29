@@ -690,7 +690,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v1.3.1</div>
+        <div class="version-badge">v1.4.0</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -2027,7 +2027,107 @@
 
         // 원본 온라인 함수 백업 (이름 변경용)
         const playSelectedCardsOnlineOriginal = function () {
-            // ... 기존 온라인 카드 내기 로직
+            if (selectedCards.length === 0) return;
+
+            const myPlayer = players.find(p => p.isMe);
+            if (!myPlayer) return;
+
+            // 내 턴인지 확인
+            const currentPlayer = players[gameState.currentPlayerIndex];
+            if (!currentPlayer || !currentPlayer.isMe) {
+                alert('당신의 턴이 아닙니다!');
+                return;
+            }
+
+            const cardsToPlay = selectedCards.map(i => myPlayer.hand[i]);
+            const newHand = myPlayer.hand.filter((_, i) => !selectedCards.includes(i));
+
+            // 게임 상태 업데이트
+            const newDiscardPile = [...gameState.discardPile, ...cardsToPlay];
+            const newDeck = [...gameState.deck];
+
+            let newAttackStack = gameState.attackStack;
+            let newAttackType = gameState.attackType;
+            let newSkipTurns = gameState.skipTurns || 0;
+            let newDirection = gameState.direction;
+            let newCurrentSuit = cardsToPlay[0].suit;
+
+            // 조커는 이전 무늬 유지
+            if (cardsToPlay[0].suit === 'black-joker' || cardsToPlay[0].suit === 'color-joker') {
+                newCurrentSuit = gameState.currentSuit;
+            }
+
+            // 특수 카드 효과
+            const value = cardsToPlay[0].value;
+            const count = cardsToPlay.length;
+
+            if (value === '2') {
+                newAttackStack += 2 * count;
+                newAttackType = '2';
+            } else if (value === 'A') {
+                newAttackStack += 3 * count;
+                newAttackType = 'A';
+            } else if (cardsToPlay[0].suit === 'black-joker') {
+                newAttackStack += 5 * count;
+                newAttackType = 'black-joker';
+            } else if (cardsToPlay[0].suit === 'color-joker') {
+                newAttackStack += 7 * count;
+                newAttackType = 'color-joker';
+            } else if (value === 'K') {
+                newSkipTurns += 2 * count;
+                newAttackStack = 0;
+                newAttackType = null;
+            } else if (value === 'Q') {
+                if (count % 2 === 1) {
+                    newDirection *= -1;
+                }
+                newAttackStack = 0;
+                newAttackType = null;
+            } else if (value === 'J') {
+                newSkipTurns += 1 * count;
+                newAttackStack = 0;
+                newAttackType = null;
+            } else {
+                newAttackStack = 0;
+                newAttackType = null;
+            }
+
+            // 다음 턴 계산
+            let nextPlayerIndex = gameState.currentPlayerIndex;
+            const totalPlayers = players.length;
+
+            // 스킵 처리
+            for (let i = 0; i <= newSkipTurns; i++) {
+                nextPlayerIndex = (nextPlayerIndex + newDirection + totalPlayers) % totalPlayers;
+            }
+            newSkipTurns = 0;
+
+            // 7카드 무늬 선택이 필요한 경우
+            if (value === '7' && cardsToPlay[0].suit !== 'black-joker' && cardsToPlay[0].suit !== 'color-joker') {
+                document.getElementById('suit-selector').style.display = 'flex';
+                // 임시 저장
+                window.pendingUpdate = {
+                    newHand, newDiscardPile, newDeck, newAttackStack, newAttackType,
+                    newSkipTurns, newDirection, nextPlayerIndex
+                };
+                selectedCards = [];
+                return;
+            }
+
+            // Firebase 업데이트
+            updateGameState({
+                deck: newDeck,
+                discardPile: newDiscardPile,
+                currentPlayerIndex: nextPlayerIndex,
+                direction: newDirection,
+                attackStack: newAttackStack,
+                attackType: newAttackType,
+                currentSuit: newCurrentSuit,
+                skipTurns: 0,
+                [`hands/${myPlayerId}`]: newHand
+            });
+
+            selectedCards = [];
         };
 
         const selectSuitOnlineOriginal = function (suit) {
