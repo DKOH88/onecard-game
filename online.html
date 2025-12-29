@@ -690,7 +690,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v1.5.2</div>
+        <div class="version-badge">v1.6.0</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -812,6 +812,31 @@
         let gameState = null;
         let players = [];
         let selectedCards = [];
+        let lastTurnIndex = -1; // 턴 변경 감지용
+
+        // 알림음 생성
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playTurnSound() {
+            try {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                oscillator.frequency.setValueAtTime(880, audioContext.currentTime); // A5
+                oscillator.frequency.setValueAtTime(1175, audioContext.currentTime + 0.1); // D6
+
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.3);
+            } catch (e) {
+                console.log('Sound not available');
+            }
+        }
 
         // 싱글 플레이어 상태
         let isSinglePlayer = false;
@@ -1350,6 +1375,12 @@
             } else if (isMyTurn) {
                 setMessage('당신의 턴입니다');
             }
+
+            // 내 턴으로 바뀌었을 때 알림음 재생
+            if (isMyTurn && lastTurnIndex !== gameState.currentPlayerIndex) {
+                playTurnSound();
+            }
+            lastTurnIndex = gameState.currentPlayerIndex;
         }
 
         function setMessage(text, type = '') {
