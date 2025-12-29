@@ -753,7 +753,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v1.9.9</div>
+        <div class="version-badge">v1.10.0</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -2002,8 +2002,9 @@
                 singlePlayerState.attackType = null;
                 setMessage(`👑 ${2 * count}턴 스킵!`);
             } else if (value === 'Q') {
-                // 2인 플레이에서는 Q가 J처럼 1턴 스킵으로 작동 (온라인과 동일)
-                if (players.length === 2) {
+                // 2인 플레이(또는 남은 인원이 2명 이하)에서는 Q가 J처럼 1턴 스킵으로 작동
+                const activeCount = players.filter(p => !p.isBankrupt && p.rank === null).length;
+                if (activeCount <= 2) {
                     singlePlayerState.skipTurns += 1 * count;
                     setMessage(`👸 ${count}턴 스킵!`);
                 } else if (count % 2 === 1) {
@@ -2350,8 +2351,9 @@
                 newAttackStack = 0;
                 newAttackType = null;
             } else if (value === 'Q') {
-                // 2인 플레이에서는 Q가 J처럼 1턴 스킵으로 작동
-                if (players.length === 2) {
+                // 2인 플레이(또는 남은 인원이 2명 이하)에서는 Q가 J처럼 1턴 스킵으로 작동
+                const activeCount = players.filter(p => !p.isBankrupt && p.hand.length > 0).length;
+                if (activeCount <= 2) {
                     newSkipTurns += 1 * count;
                 } else if (count % 2 === 1) {
                     newDirection *= -1;
