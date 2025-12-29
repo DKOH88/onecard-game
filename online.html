@@ -1,0 +1,1403 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>원카드 온라인 🃏</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a472a 0%, #0d2818 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            color: white;
+            overflow-x: hidden;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        /* 로비 스타일 */
+        .lobby-container {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 500px;
+            width: 100%;
+            margin-top: 50px;
+        }
+
+        .lobby-container h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4ade80, #22c55e);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #60a5fa, #3b82f6);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .room-code-display {
+            font-size: 2.5rem;
+            font-weight: bold;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            margin: 15px 0;
+            letter-spacing: 5px;
+        }
+
+        .player-list {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .player-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .player-item:last-child {
+            border-bottom: none;
+        }
+
+        .player-item.host::after {
+            content: '👑';
+            margin-left: 5px;
+        }
+
+        .player-item.me {
+            background: rgba(74, 222, 128, 0.2);
+            border-radius: 5px;
+        }
+
+        .connection-status {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #4ade80;
+        }
+
+        .connection-status.offline {
+            background: #ef4444;
+        }
+
+        /* 게임 영역 스타일 (기존과 동일) */
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 900px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px 20px;
+            border-radius: 15px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .direction-indicator {
+            font-size: 1.3rem;
+            padding: 5px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .game-table {
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+            height: 600px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .player-slot {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .player-slot.top {
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .player-slot.bottom {
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .player-slot.left {
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .player-slot.right {
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .player-slot.top-left {
+            top: 10%;
+            left: 10%;
+        }
+
+        .player-slot.top-right {
+            top: 10%;
+            right: 10%;
+        }
+
+        .player-area {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 15px;
+            min-width: 150px;
+        }
+
+        .player-area.current-turn {
+            box-shadow: 0 0 20px #4ade80;
+            border: 2px solid #4ade80;
+        }
+
+        .player-label {
+            font-weight: bold;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .card-count {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+        }
+
+        .cards-row {
+            display: flex;
+            gap: -15px;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 350px;
+        }
+
+        .card {
+            width: 50px;
+            height: 70px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-left: -15px;
+            border: 2px solid #333;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .card:first-child {
+            margin-left: 0;
+        }
+
+        .card:hover:not(.disabled) {
+            transform: translateY(-10px);
+            z-index: 10;
+        }
+
+        .card.selected {
+            transform: translateY(-20px);
+            box-shadow: 0 0 15px #4ade80;
+            border-color: #4ade80;
+        }
+
+        .card.playable {
+            border-color: #4ade80;
+        }
+
+        .card-back {
+            background: linear-gradient(135deg, #1e3a5f, #0f1f35);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .card-back::after {
+            content: '🃏';
+        }
+
+        /* 카드 이미지 스타일 */
+        .card.spade,
+        .card.club,
+        .card.heart,
+        .card.diamond {
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            color: transparent;
+            text-shadow: none;
+        }
+
+        .card.spade.val-A {
+            background-image: url('cards/spade/A.png');
+        }
+
+        .card.spade.val-2 {
+            background-image: url('cards/spade/2.png');
+        }
+
+        .card.spade.val-3 {
+            background-image: url('cards/spade/3.png');
+        }
+
+        .card.spade.val-4 {
+            background-image: url('cards/spade/4.png');
+        }
+
+        .card.spade.val-5 {
+            background-image: url('cards/spade/5.png');
+        }
+
+        .card.spade.val-6 {
+            background-image: url('cards/spade/6.png');
+        }
+
+        .card.spade.val-7 {
+            background-image: url('cards/spade/7.png');
+        }
+
+        .card.spade.val-8 {
+            background-image: url('cards/spade/8.png');
+        }
+
+        .card.spade.val-9 {
+            background-image: url('cards/spade/9.png');
+        }
+
+        .card.spade.val-10 {
+            background-image: url('cards/spade/10.png');
+        }
+
+        .card.spade.val-J {
+            background-image: url('cards/spade/J.png');
+        }
+
+        .card.spade.val-Q {
+            background-image: url('cards/spade/Q.png');
+        }
+
+        .card.spade.val-K {
+            background-image: url('cards/spade/K.png');
+        }
+
+        .card.club.val-A {
+            background-image: url('cards/club/A.png');
+        }
+
+        .card.club.val-2 {
+            background-image: url('cards/club/2.png');
+        }
+
+        .card.club.val-3 {
+            background-image: url('cards/club/3.png');
+        }
+
+        .card.club.val-4 {
+            background-image: url('cards/club/4.png');
+        }
+
+        .card.club.val-5 {
+            background-image: url('cards/club/5.png');
+        }
+
+        .card.club.val-6 {
+            background-image: url('cards/club/6.png');
+        }
+
+        .card.club.val-7 {
+            background-image: url('cards/club/7.png');
+        }
+
+        .card.club.val-8 {
+            background-image: url('cards/club/8.png');
+        }
+
+        .card.club.val-9 {
+            background-image: url('cards/club/9.png');
+        }
+
+        .card.club.val-10 {
+            background-image: url('cards/club/10.png');
+        }
+
+        .card.club.val-J {
+            background-image: url('cards/club/J.png');
+        }
+
+        .card.club.val-Q {
+            background-image: url('cards/club/Q.png');
+        }
+
+        .card.club.val-K {
+            background-image: url('cards/club/K.png');
+        }
+
+        .card.heart.val-A {
+            background-image: url('cards/heart/A.png');
+        }
+
+        .card.heart.val-2 {
+            background-image: url('cards/heart/2.png');
+        }
+
+        .card.heart.val-3 {
+            background-image: url('cards/heart/3.png');
+        }
+
+        .card.heart.val-4 {
+            background-image: url('cards/heart/4.png');
+        }
+
+        .card.heart.val-5 {
+            background-image: url('cards/heart/5.png');
+        }
+
+        .card.heart.val-6 {
+            background-image: url('cards/heart/6.png');
+        }
+
+        .card.heart.val-7 {
+            background-image: url('cards/heart/7.png');
+        }
+
+        .card.heart.val-8 {
+            background-image: url('cards/heart/8.png');
+        }
+
+        .card.heart.val-9 {
+            background-image: url('cards/heart/9.png');
+        }
+
+        .card.heart.val-10 {
+            background-image: url('cards/heart/10.png');
+        }
+
+        .card.heart.val-J {
+            background-image: url('cards/heart/J.png');
+        }
+
+        .card.heart.val-Q {
+            background-image: url('cards/heart/Q.png');
+        }
+
+        .card.heart.val-K {
+            background-image: url('cards/heart/K.png');
+        }
+
+        .card.diamond.val-A {
+            background-image: url('cards/diamond/A.png');
+        }
+
+        .card.diamond.val-2 {
+            background-image: url('cards/diamond/2.png');
+        }
+
+        .card.diamond.val-3 {
+            background-image: url('cards/diamond/3.png');
+        }
+
+        .card.diamond.val-4 {
+            background-image: url('cards/diamond/4.png');
+        }
+
+        .card.diamond.val-5 {
+            background-image: url('cards/diamond/5.png');
+        }
+
+        .card.diamond.val-6 {
+            background-image: url('cards/diamond/6.png');
+        }
+
+        .card.diamond.val-7 {
+            background-image: url('cards/diamond/7.png');
+        }
+
+        .card.diamond.val-8 {
+            background-image: url('cards/diamond/8.png');
+        }
+
+        .card.diamond.val-9 {
+            background-image: url('cards/diamond/9.png');
+        }
+
+        .card.diamond.val-10 {
+            background-image: url('cards/diamond/10.png');
+        }
+
+        .card.diamond.val-J {
+            background-image: url('cards/diamond/J.png');
+        }
+
+        .card.diamond.val-Q {
+            background-image: url('cards/diamond/Q.png');
+        }
+
+        .card.diamond.val-K {
+            background-image: url('cards/diamond/K.png');
+        }
+
+        .card.black-joker {
+            background: url('cards/black_joker.png') center/cover;
+            color: transparent;
+        }
+
+        .card.color-joker {
+            background: url('cards/color_joker.png') center/cover;
+            color: transparent;
+        }
+
+        .center-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .deck-area {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .deck {
+            position: relative;
+            width: 60px;
+            height: 85px;
+        }
+
+        .deck .card-back {
+            position: absolute;
+            width: 60px;
+            height: 85px;
+            cursor: pointer;
+        }
+
+        .discard-pile {
+            display: flex;
+            align-items: center;
+        }
+
+        #discard-cards {
+            display: flex;
+            align-items: center;
+        }
+
+        .message-box {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            text-align: center;
+            min-width: 200px;
+        }
+
+        .message-box.attack {
+            background: linear-gradient(135deg, #dc2626, #991b1b);
+            animation: pulse 0.5s infinite alternate;
+        }
+
+        @keyframes pulse {
+            from {
+                transform: scale(1);
+            }
+
+            to {
+                transform: scale(1.05);
+            }
+        }
+
+        .action-buttons {
+            display: none;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .suit-selector {
+            display: none;
+            gap: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 15px;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 100;
+        }
+
+        .suit-btn {
+            font-size: 2rem;
+            padding: 15px 25px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            background: white;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* 반응형 */
+        @media (max-width: 600px) {
+            .game-table {
+                height: 500px;
+            }
+
+            .card {
+                width: 40px;
+                height: 56px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🃏 원카드 온라인</h1>
+
+    <!-- 로비 화면 -->
+    <div class="lobby-container" id="lobby-screen">
+        <h2>🎮 게임 로비</h2>
+
+        <div id="main-menu">
+            <div class="input-group">
+                <label>닉네임</label>
+                <input type="text" id="nickname-input" placeholder="닉네임을 입력하세요" maxlength="10">
+            </div>
+            <button class="btn btn-primary" onclick="createRoom()">🏠 방 만들기</button>
+            <button class="btn btn-secondary" onclick="showJoinForm()">🚪 방 참가하기</button>
+        </div>
+
+        <div id="join-form" class="hidden">
+            <div class="input-group">
+                <label>방 코드</label>
+                <input type="text" id="room-code-input" placeholder="6자리 코드 입력" maxlength="6"
+                    style="text-transform: uppercase;">
+            </div>
+            <button class="btn btn-primary" onclick="joinRoom()">참가하기</button>
+            <button class="btn btn-secondary" onclick="hideJoinForm()">취소</button>
+        </div>
+
+        <div id="waiting-room" class="hidden">
+            <div class="room-code-display" id="room-code-display">------</div>
+            <p style="text-align:center;margin-bottom:10px;">친구에게 이 코드를 공유하세요!</p>
+
+            <div class="player-list" id="player-list">
+                <!-- 플레이어 목록이 여기에 표시됨 -->
+            </div>
+
+            <div id="host-controls" class="hidden">
+                <button class="btn btn-primary" onclick="startOnlineGame()" id="start-game-btn" disabled>
+                    🎮 게임 시작 (최소 2명 필요)
+                </button>
+            </div>
+
+            <button class="btn btn-secondary" onclick="leaveRoom()">🚪 나가기</button>
+        </div>
+    </div>
+
+    <!-- 게임 화면 -->
+    <div id="game-screen" class="hidden" style="width:100%;max-width:900px;">
+        <div class="game-header">
+            <div>
+                <span id="turn-text">대기 중...</span>
+            </div>
+            <div class="direction-indicator" id="direction">⟳ 시계</div>
+            <div>
+                <span id="deck-count">덱: 0</span>
+            </div>
+        </div>
+
+        <div class="game-table">
+            <div class="player-slot top" id="slot-top"></div>
+            <div class="player-slot left" id="slot-left"></div>
+            <div class="player-slot right" id="slot-right"></div>
+            <div class="player-slot top-left" id="slot-top-left"></div>
+            <div class="player-slot top-right" id="slot-top-right"></div>
+
+            <div class="center-area">
+                <div class="deck-area">
+                    <div class="deck" onclick="drawCardOnline()">
+                        <div class="card-back"></div>
+                    </div>
+                    <div class="discard-pile" id="discard-cards"></div>
+                </div>
+                <div class="message-box" id="message">게임 시작!</div>
+                <div class="action-buttons" id="action-buttons">
+                    <button class="btn btn-primary" onclick="playSelectedCardsOnline()">카드 내기</button>
+                    <button class="btn btn-secondary" onclick="clearSelection()">취소</button>
+                </div>
+            </div>
+
+            <div class="player-slot bottom" id="slot-bottom"></div>
+        </div>
+    </div>
+
+    <!-- 무늬 선택 -->
+    <div class="suit-selector" id="suit-selector">
+        <button class="suit-btn" onclick="selectSuitOnline('spade')">♠</button>
+        <button class="suit-btn" onclick="selectSuitOnline('heart')">♥</button>
+        <button class="suit-btn" onclick="selectSuitOnline('diamond')">♦</button>
+        <button class="suit-btn" onclick="selectSuitOnline('club')">♣</button>
+    </div>
+
+    <script>
+        // Firebase 설정
+        const firebaseConfig = {
+            databaseURL: "https://dkcard-89e9c-default-rtdb.asia-southeast1.firebasedatabase.app"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // 게임 상태
+        let myPlayerId = null;
+        let myNickname = '';
+        let currentRoomCode = null;
+        let isHost = false;
+        let roomRef = null;
+        let gameState = null;
+        let players = [];
+        let selectedCards = [];
+
+        const suitSymbols = {
+            'spade': '♠', 'heart': '♥', 'diamond': '♦', 'club': '♣'
+        };
+
+        // 유틸리티 함수
+        function generateRoomCode() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let code = '';
+            for (let i = 0; i < 6; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return code;
+        }
+
+        function generatePlayerId() {
+            return 'player_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        // 로비 함수
+        function showJoinForm() {
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById('join-form').classList.remove('hidden');
+        }
+
+        function hideJoinForm() {
+            document.getElementById('join-form').classList.add('hidden');
+            document.getElementById('main-menu').classList.remove('hidden');
+        }
+
+        function createRoom() {
+            myNickname = document.getElementById('nickname-input').value.trim();
+            if (!myNickname) {
+                alert('닉네임을 입력해주세요!');
+                return;
+            }
+
+            myPlayerId = generatePlayerId();
+            currentRoomCode = generateRoomCode();
+            isHost = true;
+
+            roomRef = database.ref('rooms/' + currentRoomCode);
+
+            roomRef.set({
+                host: myPlayerId,
+                status: 'waiting',
+                createdAt: Date.now(),
+                players: {
+                    [myPlayerId]: {
+                        name: myNickname,
+                        connected: true,
+                        joinedAt: Date.now()
+                    }
+                }
+            }).then(() => {
+                showWaitingRoom();
+                listenToRoom();
+                setupDisconnectHandler();
+            }).catch(err => {
+                alert('방 생성 실패: ' + err.message);
+            });
+        }
+
+        function joinRoom() {
+            myNickname = document.getElementById('nickname-input').value.trim();
+            const roomCode = document.getElementById('room-code-input').value.trim().toUpperCase();
+
+            if (!myNickname) {
+                alert('닉네임을 입력해주세요!');
+                return;
+            }
+            if (!roomCode || roomCode.length !== 6) {
+                alert('올바른 방 코드를 입력해주세요!');
+                return;
+            }
+
+            myPlayerId = generatePlayerId();
+            currentRoomCode = roomCode;
+            roomRef = database.ref('rooms/' + currentRoomCode);
+
+            roomRef.once('value').then(snapshot => {
+                if (!snapshot.exists()) {
+                    alert('존재하지 않는 방입니다!');
+                    return;
+                }
+
+                const roomData = snapshot.val();
+                if (roomData.status !== 'waiting') {
+                    alert('이미 게임이 시작된 방입니다!');
+                    return;
+                }
+
+                const playerCount = Object.keys(roomData.players || {}).length;
+                if (playerCount >= 6) {
+                    alert('방이 가득 찼습니다! (최대 6명)');
+                    return;
+                }
+
+                isHost = false;
+                roomRef.child('players/' + myPlayerId).set({
+                    name: myNickname,
+                    connected: true,
+                    joinedAt: Date.now()
+                }).then(() => {
+                    hideJoinForm();
+                    showWaitingRoom();
+                    listenToRoom();
+                    setupDisconnectHandler();
+                });
+            });
+        }
+
+        function showWaitingRoom() {
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById('join-form').classList.add('hidden');
+            document.getElementById('waiting-room').classList.remove('hidden');
+            document.getElementById('room-code-display').textContent = currentRoomCode;
+
+            if (isHost) {
+                document.getElementById('host-controls').classList.remove('hidden');
+            }
+        }
+
+        function setupDisconnectHandler() {
+            roomRef.child('players/' + myPlayerId + '/connected').onDisconnect().set(false);
+        }
+
+        function listenToRoom() {
+            roomRef.on('value', snapshot => {
+                if (!snapshot.exists()) {
+                    alert('방이 삭제되었습니다!');
+                    location.reload();
+                    return;
+                }
+
+                const roomData = snapshot.val();
+
+                // 게임 시작 확인
+                if (roomData.status === 'playing' && roomData.gameState) {
+                    gameState = roomData.gameState;
+                    players = [];
+                    const playerOrder = roomData.gameState.playerOrder || [];
+                    playerOrder.forEach((pid, idx) => {
+                        const pData = roomData.players[pid];
+                        const handData = roomData.gameState.hands ? roomData.gameState.hands[pid] : [];
+                        players.push({
+                            id: pid,
+                            name: pData.name,
+                            hand: handData || [],
+                            isMe: pid === myPlayerId,
+                            isBankrupt: pData.isBankrupt || false,
+                            rank: pData.rank || null,
+                            slot: getSlotForPlayer(idx, playerOrder.length)
+                        });
+                    });
+                    showGameScreen();
+                    render();
+                    return;
+                }
+
+                // 대기실 플레이어 목록 업데이트
+                updatePlayerList(roomData);
+            });
+        }
+
+        function updatePlayerList(roomData) {
+            const playerListEl = document.getElementById('player-list');
+            const playersData = roomData.players || {};
+            const hostId = roomData.host;
+
+            let html = '';
+            let connectedCount = 0;
+
+            Object.entries(playersData).forEach(([pid, pData]) => {
+                const isMe = pid === myPlayerId;
+                const isHostPlayer = pid === hostId;
+                const isConnected = pData.connected;
+
+                if (isConnected) connectedCount++;
+
+                html += `
+                    <div class="player-item ${isHostPlayer ? 'host' : ''} ${isMe ? 'me' : ''}">
+                        <span>${pData.name} ${isMe ? '(나)' : ''}</span>
+                        <div class="connection-status ${isConnected ? '' : 'offline'}"></div>
+                    </div>
+                `;
+            });
+
+            playerListEl.innerHTML = html;
+
+            // 시작 버튼 활성화
+            const startBtn = document.getElementById('start-game-btn');
+            if (startBtn) {
+                if (connectedCount >= 2) {
+                    startBtn.disabled = false;
+                    startBtn.textContent = `🎮 게임 시작 (${connectedCount}명)`;
+                } else {
+                    startBtn.disabled = true;
+                    startBtn.textContent = '🎮 게임 시작 (최소 2명 필요)';
+                }
+            }
+        }
+
+        function getSlotForPlayer(index, totalPlayers) {
+            const myIndex = players.findIndex(p => p.isMe);
+            const relativeIndex = (index - myIndex + totalPlayers) % totalPlayers;
+
+            const slots = {
+                2: ['bottom', 'top'],
+                3: ['bottom', 'left', 'top'],
+                4: ['bottom', 'left', 'top', 'right'],
+                5: ['bottom', 'left', 'top-left', 'top-right', 'right'],
+                6: ['bottom', 'left', 'top-left', 'top', 'top-right', 'right']
+            };
+
+            return slots[totalPlayers] ? slots[totalPlayers][relativeIndex] : 'bottom';
+        }
+
+        function leaveRoom() {
+            if (roomRef) {
+                roomRef.child('players/' + myPlayerId).remove();
+                roomRef.off();
+            }
+            location.reload();
+        }
+
+        // 게임 시작 (방장만)
+        function startOnlineGame() {
+            if (!isHost) return;
+
+            roomRef.once('value').then(snapshot => {
+                const roomData = snapshot.val();
+                const playerIds = Object.keys(roomData.players).filter(pid => roomData.players[pid].connected);
+
+                if (playerIds.length < 2) {
+                    alert('최소 2명이 필요합니다!');
+                    return;
+                }
+
+                // 덱 생성 및 셔플
+                const deck = createDeck();
+                shuffle(deck);
+
+                // 카드 분배 (5장씩)
+                const hands = {};
+                playerIds.forEach(pid => {
+                    hands[pid] = [];
+                    for (let i = 0; i < 5; i++) {
+                        hands[pid].push(deck.pop());
+                    }
+                });
+
+                // 첫 카드 (특수 카드 제외)
+                let firstCard;
+                do {
+                    firstCard = deck.pop();
+                    if (isSpecialCard(firstCard)) {
+                        deck.unshift(firstCard);
+                    } else {
+                        break;
+                    }
+                } while (true);
+
+                // 게임 상태 저장
+                roomRef.update({
+                    status: 'playing',
+                    gameState: {
+                        deck: deck,
+                        discardPile: [firstCard],
+                        currentPlayerIndex: 0,
+                        direction: 1,
+                        attackStack: 0,
+                        attackType: null,
+                        currentSuit: firstCard.suit,
+                        skipTurns: 0,
+                        playerOrder: playerIds,
+                        hands: hands
+                    }
+                });
+            });
+        }
+
+        function createDeck() {
+            const suits = ['spade', 'heart', 'diamond', 'club'];
+            const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+            const deck = [];
+
+            for (let suit of suits) {
+                for (let value of values) {
+                    deck.push({ suit, value });
+                }
+            }
+            deck.push({ suit: 'black-joker', value: 'JOKER' });
+            deck.push({ suit: 'color-joker', value: 'JOKER' });
+
+            return deck;
+        }
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function isSpecialCard(card) {
+            return card.value === '2' || card.value === 'A' ||
+                card.value === 'J' || card.value === 'Q' || card.value === 'K' ||
+                card.suit === 'black-joker' || card.suit === 'color-joker';
+        }
+
+        function showGameScreen() {
+            document.getElementById('lobby-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+        }
+
+        // 게임 렌더링
+        function render() {
+            if (!gameState) return;
+
+            document.getElementById('direction').textContent = gameState.direction === 1 ? '⟳ 시계' : '⟲ 반시계';
+            document.getElementById('deck-count').textContent = `덱: ${gameState.deck.length}`;
+
+            // 슬롯 초기화
+            ['top', 'left', 'right', 'bottom', 'top-left', 'top-right'].forEach(slot => {
+                const el = document.getElementById('slot-' + slot);
+                if (el) el.innerHTML = '';
+            });
+
+            // 현재 턴 플레이어
+            const currentPlayer = players[gameState.currentPlayerIndex];
+            const isMyTurn = currentPlayer && currentPlayer.isMe;
+
+            document.getElementById('turn-text').textContent = currentPlayer ?
+                `${currentPlayer.name}의 턴` : '';
+
+            // 플레이어 렌더링
+            players.forEach((p, idx) => {
+                const slotEl = document.getElementById('slot-' + p.slot);
+                if (!slotEl) return;
+
+                const isCurrent = gameState.currentPlayerIndex === idx;
+
+                if (p.isMe) {
+                    // 내 카드 (앞면)
+                    slotEl.innerHTML = `
+                        <div class="player-area ${isCurrent ? 'current-turn' : ''}">
+                            <div class="player-label">
+                                ${p.name} (나)
+                                <span class="card-count">${p.hand.length}장</span>
+                            </div>
+                            <div class="cards-row">
+                                ${p.hand.map((card, i) => {
+                        const playable = isCurrent && canPlayCard(card);
+                        const selected = selectedCards.includes(i);
+                        const isNormalSuit = ['spade', 'heart', 'diamond', 'club'].includes(card.suit);
+                        const valueClass = isNormalSuit ? `val-${card.value}` : '';
+                        return `
+                                        <div class="card ${card.suit} ${valueClass} ${playable ? 'playable' : ''} ${selected ? 'selected' : ''}"
+                                             onclick="toggleCardSelection(${i})">
+                                        </div>
+                                    `;
+                    }).join('')}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // 상대 카드 (뒷면)
+                    slotEl.innerHTML = `
+                        <div class="player-area ${isCurrent ? 'current-turn' : ''}">
+                            <div class="player-label">
+                                ${p.name}
+                                <span class="card-count">${p.hand.length}장</span>
+                            </div>
+                            <div class="cards-row">
+                                ${p.hand.map(() => `<div class="card card-back"></div>`).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+
+            // 버린 카드 더미
+            const discardEl = document.getElementById('discard-cards');
+            const topCards = gameState.discardPile.slice(-3);
+            discardEl.innerHTML = topCards.map((card, idx) => {
+                const isTop = idx === topCards.length - 1;
+                const isNormalSuit = ['spade', 'heart', 'diamond', 'club'].includes(card.suit);
+                const valueClass = isNormalSuit ? `val-${card.value}` : '';
+                const opacity = isTop ? '1' : (idx === topCards.length - 2 ? '0.7' : '0.4');
+                return `
+                    <div class="card ${card.suit} ${valueClass}" 
+                         style="width:${isTop ? 60 : 45}px;height:${isTop ? 85 : 65}px;opacity:${opacity};cursor:default;">
+                    </div>
+                `;
+            }).join('');
+
+            // 액션 버튼
+            document.getElementById('action-buttons').style.display = selectedCards.length > 0 ? 'flex' : 'none';
+
+            // 메시지
+            if (gameState.attackStack > 0) {
+                setMessage(`⚔️ ${gameState.attackStack}장 공격!`, 'attack');
+            } else if (isMyTurn) {
+                setMessage('당신의 턴입니다');
+            }
+        }
+
+        function setMessage(text, type = '') {
+            const msgBox = document.getElementById('message');
+            msgBox.textContent = text;
+            msgBox.className = 'message-box' + (type ? ' ' + type : '');
+        }
+
+        function canPlayCard(card) {
+            const currentPlayer = players[gameState.currentPlayerIndex];
+            if (!currentPlayer || !currentPlayer.isMe) return false;
+
+            if (gameState.attackStack > 0) {
+                return canDefendWith(card);
+            }
+
+            const topCard = gameState.discardPile[gameState.discardPile.length - 1];
+
+            if (card.suit === 'black-joker' || card.suit === 'color-joker') return true;
+            if (card.suit === gameState.currentSuit) return true;
+            if (card.value === topCard.value) return true;
+
+            return false;
+        }
+
+        function canDefendWith(card) {
+            const attackType = gameState.attackType;
+            if (!attackType) return true;
+
+            if (attackType === '2') {
+                if (card.value === '2') return true;
+                if (card.value === 'A' && card.suit === gameState.currentSuit) return true;
+                if (card.suit === 'black-joker' || card.suit === 'color-joker') return true;
+                return false;
+            }
+            if (attackType === 'A') {
+                if (card.value === 'A') return true;
+                if (card.suit === 'black-joker' || card.suit === 'color-joker') return true;
+                return false;
+            }
+            if (attackType === 'black-joker') {
+                if (card.value === 'A' && card.suit === 'spade') return true;
+                if (card.suit === 'black-joker' || card.suit === 'color-joker') return true;
+                return false;
+            }
+            if (attackType === 'color-joker') {
+                if (card.value === 'A' && card.suit === 'spade') return true;
+                if (card.suit === 'black-joker' || card.suit === 'color-joker') return true;
+                return false;
+            }
+            return false;
+        }
+
+        function toggleCardSelection(index) {
+            const currentPlayer = players[gameState.currentPlayerIndex];
+            if (!currentPlayer || !currentPlayer.isMe) return;
+
+            const card = currentPlayer.hand[index];
+            if (!canPlayCard(card)) return;
+
+            const idx = selectedCards.indexOf(index);
+            if (idx > -1) {
+                selectedCards.splice(idx, 1);
+            } else {
+                // 같은 숫자 카드만 선택 가능
+                if (selectedCards.length > 0) {
+                    const firstCard = currentPlayer.hand[selectedCards[0]];
+                    if (card.value !== firstCard.value) {
+                        alert('같은 숫자의 카드만 함께 낼 수 있습니다!');
+                        return;
+                    }
+                }
+                selectedCards.push(index);
+            }
+            render();
+        }
+
+        function clearSelection() {
+            selectedCards = [];
+            render();
+        }
+
+        // 온라인 카드 내기
+        function playSelectedCardsOnline() {
+            if (selectedCards.length === 0) return;
+
+            const myPlayer = players.find(p => p.isMe);
+            if (!myPlayer) return;
+
+            const cardsToPlay = selectedCards.map(i => myPlayer.hand[i]);
+            const newHand = myPlayer.hand.filter((_, i) => !selectedCards.includes(i));
+
+            // 게임 상태 업데이트
+            const newDiscardPile = [...gameState.discardPile, ...cardsToPlay];
+            const newDeck = [...gameState.deck];
+
+            let newAttackStack = gameState.attackStack;
+            let newAttackType = gameState.attackType;
+            let newSkipTurns = gameState.skipTurns;
+            let newDirection = gameState.direction;
+            let newCurrentSuit = cardsToPlay[0].suit;
+
+            // 조커는 이전 무늬 유지
+            if (cardsToPlay[0].suit === 'black-joker' || cardsToPlay[0].suit === 'color-joker') {
+                newCurrentSuit = gameState.currentSuit;
+            }
+
+            // 특수 카드 효과
+            const value = cardsToPlay[0].value;
+            const count = cardsToPlay.length;
+
+            if (value === '2') {
+                newAttackStack += 2 * count;
+                newAttackType = '2';
+            } else if (value === 'A') {
+                newAttackStack += 3 * count;
+                newAttackType = 'A';
+            } else if (cardsToPlay[0].suit === 'black-joker') {
+                newAttackStack += 5 * count;
+                newAttackType = 'black-joker';
+            } else if (cardsToPlay[0].suit === 'color-joker') {
+                newAttackStack += 7 * count;
+                newAttackType = 'color-joker';
+            } else if (value === 'K') {
+                newSkipTurns += 2 * count;
+                newAttackStack = 0;
+                newAttackType = null;
+            } else if (value === 'Q') {
+                if (count % 2 === 1) {
+                    newDirection *= -1;
+                }
+                newAttackStack = 0;
+                newAttackType = null;
+            } else if (value === 'J') {
+                newSkipTurns += 1 * count;
+                newAttackStack = 0;
+                newAttackType = null;
+            } else {
+                newAttackStack = 0;
+                newAttackType = null;
+            }
+
+            // 다음 턴
+            let nextPlayerIndex = gameState.currentPlayerIndex;
+            const activePlayers = players.filter(p => !p.isBankrupt && p.rank === null);
+
+            // 스킵 처리
+            for (let i = 0; i <= newSkipTurns; i++) {
+                nextPlayerIndex = (nextPlayerIndex + newDirection + players.length) % players.length;
+            }
+            newSkipTurns = 0;
+
+            // 7카드 무늬 선택이 필요한 경우
+            if (value === '7' && cardsToPlay[0].suit !== 'black-joker' && cardsToPlay[0].suit !== 'color-joker') {
+                document.getElementById('suit-selector').style.display = 'flex';
+                // 임시 저장
+                window.pendingUpdate = {
+                    newHand, newDiscardPile, newDeck, newAttackStack, newAttackType,
+                    newSkipTurns, newDirection, nextPlayerIndex
+                };
+                selectedCards = [];
+                return;
+            }
+
+            // Firebase 업데이트
+            updateGameState({
+                deck: newDeck,
+                discardPile: newDiscardPile,
+                currentPlayerIndex: nextPlayerIndex,
+                direction: newDirection,
+                attackStack: newAttackStack,
+                attackType: newAttackType,
+                currentSuit: newCurrentSuit,
+                skipTurns: 0,
+                [`hands/${myPlayerId}`]: newHand
+            });
+
+            selectedCards = [];
+        }
+
+        function selectSuitOnline(suit) {
+            document.getElementById('suit-selector').style.display = 'none';
+
+            if (window.pendingUpdate) {
+                const { newHand, newDiscardPile, newDeck, newAttackStack, newAttackType,
+                    newSkipTurns, newDirection, nextPlayerIndex } = window.pendingUpdate;
+
+                updateGameState({
+                    deck: newDeck,
+                    discardPile: newDiscardPile,
+                    currentPlayerIndex: nextPlayerIndex,
+                    direction: newDirection,
+                    attackStack: newAttackStack,
+                    attackType: newAttackType,
+                    currentSuit: suit,
+                    skipTurns: 0,
+                    [`hands/${myPlayerId}`]: newHand
+                });
+
+                window.pendingUpdate = null;
+            }
+        }
+
+        function drawCardOnline() {
+            const currentPlayer = players[gameState.currentPlayerIndex];
+            if (!currentPlayer || !currentPlayer.isMe) {
+                alert('당신의 턴이 아닙니다!');
+                return;
+            }
+
+            const myPlayer = players.find(p => p.isMe);
+            if (!myPlayer) return;
+
+            const cardsToDraw = gameState.attackStack > 0 ? gameState.attackStack : 1;
+            const newDeck = [...gameState.deck];
+            const newHand = [...myPlayer.hand];
+
+            for (let i = 0; i < cardsToDraw; i++) {
+                if (newDeck.length === 0) {
+                    // 덱 리셔플
+                    const topCard = gameState.discardPile[gameState.discardPile.length - 1];
+                    const reshuffled = gameState.discardPile.slice(0, -1);
+                    shuffle(reshuffled);
+                    newDeck.push(...reshuffled);
+                }
+                if (newDeck.length > 0) {
+                    newHand.push(newDeck.pop());
+                }
+            }
+
+            // 다음 턴
+            let nextPlayerIndex = (gameState.currentPlayerIndex + gameState.direction + players.length) % players.length;
+
+            updateGameState({
+                deck: newDeck,
+                currentPlayerIndex: nextPlayerIndex,
+                attackStack: 0,
+                attackType: null,
+                [`hands/${myPlayerId}`]: newHand
+            });
+        }
+
+        function updateGameState(updates) {
+            const gameStateRef = roomRef.child('gameState');
+            gameStateRef.update(updates);
+        }
+    </script>
+</body>
+
+</html>
