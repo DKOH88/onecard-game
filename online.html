@@ -2976,6 +2976,7 @@
         // 키보드 단축키 (Enter)
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
+                console.log('DEBUG: Enter key pressed');
                 // 모달이나 입력창이 떠있으면 무시 (닉네임 입력 등)
                 if (!document.getElementById('main-menu').classList.contains('hidden') ||
                     !document.getElementById('join-form').classList.contains('hidden') ||
@@ -2990,10 +2991,13 @@
                 let isMyTurn = false;
                 if (isSinglePlayer) {
                     const player = players.find(p => p.isHuman);
-                    isMyTurn = singlePlayerState.currentPlayerIndex === players.indexOf(player);
+                    const playerIndex = players.indexOf(player);
+                    isMyTurn = singlePlayerState.currentPlayerIndex === playerIndex;
+                    console.log(`DEBUG: SinglePlayer - Current: ${singlePlayerState.currentPlayerIndex}, MyIndex: ${playerIndex}, IsMyTurn: ${isMyTurn}`);
                 } else {
                     const currentPlayer = players[gameState.currentPlayerIndex];
                     isMyTurn = currentPlayer && currentPlayer.isMe;
+                    console.log(`DEBUG: Online - CurrentIndex: ${gameState.currentPlayerIndex}, IsMe: ${currentPlayer?.isMe}, IsMyTurn: ${isMyTurn}`);
                 }
 
                 if (isMyTurn) {
