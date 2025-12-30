@@ -248,6 +248,29 @@
             padding: 2px 8px;
             border-radius: 10px;
             font-size: 0.85rem;
+            transition: all 0.3s;
+        }
+
+        .card-count.warning {
+            color: #ff4444;
+            /* 밝은 빨강 */
+            font-weight: bold;
+            background: rgba(0, 0, 0, 0.6);
+            /* 배경을 어둡게 하여 대비 강조 */
+            border: 1px solid #ff4444;
+            animation: pulse-red 0.8s infinite alternate;
+        }
+
+        @keyframes pulse-red {
+            from {
+                transform: scale(1);
+                box-shadow: 0 0 5px #ff4444;
+            }
+
+            to {
+                transform: scale(1.2);
+                box-shadow: 0 0 15px #ff4444;
+            }
         }
 
         .cards-row {
@@ -786,7 +809,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.3.5</div>
+        <div class="version-badge">v2.3.6</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -1603,9 +1626,8 @@
                     }).join('')}
                             </div>
                         </div>
-                        <div class="player-label" style="margin-top:15px;text-align:center;">
                             ${p.name} (나)
-                            <span class="card-count">${p.hand.length}장</span>
+                            <span class="card-count ${p.hand.length === 1 ? 'warning' : ''}">${p.hand.length}장</span>
                         </div>
                     `;
                 } else {
@@ -1614,7 +1636,7 @@
                         <div class="player-area opponent-area ${isCurrent ? 'current-turn' : ''}">
                             <div class="player-label">
                                 ${p.name}
-                                <span class="card-count">${p.hand.length}장</span>
+                                <span class="card-count ${p.hand.length === 1 ? 'warning' : ''}">${p.hand.length}장</span>
                             </div>
                             <div class="cards-row">
                                 ${p.hand.map(() => `<div class="card card-back opponent-card"></div>`).join('')}
@@ -1949,7 +1971,7 @@
                         </div>
                         <div class="player-label" style="margin-top:15px;text-align:center;">
                             ${p.name}
-                            <span class="card-count">${p.hand.length}장</span>
+                            <span class="card-count ${p.hand.length === 1 ? 'warning' : ''}">${p.hand.length}장</span>
                             ${p.isBankrupt ? '<span style="background:#ef4444;padding:2px 6px;border-radius:5px;font-size:0.8rem;">파산</span>' : ''}
                             ${p.rank ? `<span style="background:#4ade80;padding:2px 6px;border-radius:5px;font-size:0.8rem;">${p.rank}등</span>` : ''}
                         </div>
@@ -1960,7 +1982,7 @@
                         <div class="player-area opponent-area ${isCurrent ? 'current-turn' : ''} ${p.isBankrupt ? 'bankrupt' : ''}">
                             <div class="player-label">
                                 ${p.name}
-                                <span class="card-count">${p.hand.length}장</span>
+                                <span class="card-count ${p.hand.length === 1 ? 'warning' : ''}">${p.hand.length}장</span>
                                 ${p.isBankrupt ? '<span style="background:#ef4444;padding:2px 6px;border-radius:5px;font-size:0.8rem;">파산</span>' : ''}
                                 ${p.rank ? `<span style="background:#4ade80;padding:2px 6px;border-radius:5px;font-size:0.8rem;">${p.rank}등</span>` : ''}
                             </div>
