@@ -811,7 +811,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.3.18</div>
+        <div class="version-badge">v2.3.19</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -2480,20 +2480,96 @@
                 return;
             }
 
-            // 같은 숫자 카드 묶기
-            const groups = {};
-            playable.forEach(pc => {
-                const val = pc.card.value;
-                if (!groups[val]) groups[val] = [];
-                groups[val].push(pc);
-            });
+            // === 스마트 AI 전략 ===
 
-            let bestGroup = null;
-            for (let val in groups) {
-                if (!bestGroup || groups[val].length > bestGroup.length) {
-                    bestGroup = groups[val];
+            // 1. 카드 분류
+            const jokers = playable.filter(pc => pc.card.suit === 'black-joker' || pc.card.suit === 'color-joker');
+            const aces = playable.filter(pc => pc.card.value === 'A');
+            const twos = playable.filter(pc => pc.card.value === '2');
+            const sevens = playable.filter(pc => pc.card.value === '7');
+            const normals = playable.filter(pc =>
+                pc.card.suit !== 'black-joker' &&
+                pc.card.suit !== 'color-joker' &&
+                pc.card.value !== 'A' &&
+                pc.card.value !== '2' &&
+                pc.card.value !== '7'
+            );
+
+            // 2. 상황 분석
+            const myCardCount = player.hand.length;
+            const humanPlayer = players.find(p => p.isHuman);
+            const humanCardCount = humanPlayer ? humanPlayer.hand.length : 99;
+            const isUnderAttack = singlePlayerState.attackStack > 0;
+            const isEmergency = myCardCount <= 3; // 카드가 3장 이하면 긴급 상황
+            const canWinNow = myCardCount === 1; // 이번에 내면 승리
+
+            let chosenCards = [];
+
+            // 3. 전략적 카드 선택
+            if (isUnderAttack) {
+                // 공격 받는 중 -> 방어 카드 사용 (단, 조커는 최후의 수단)
+                if (twos.length > 0) {
+                    chosenCards = [twos[0]];
+                } else if (aces.length > 0) {
+                    chosenCards = [aces[0]];
+                } else if (jokers.length > 0) {
+                    chosenCards = [jokers[0]];
+                }
+            } else if (canWinNow) {
+                // 승리 가능! -> 아무 카드나 내기
+                chosenCards = [playable[0]];
+            } else if (humanCardCount <= 2 && (twos.length > 0 || jokers.length > 0)) {
+                // 플레이어가 카드 적을 때 -> 공격!
+                if (twos.length > 0) {
+                    // 같은 숫자 2 여러 장 모아서 공격
+                    chosenCards = twos;
+                } else if (jokers.length > 0 && humanCardCount === 1) {
+                    // 원카드 상태면 조커로 확실히!
+                    chosenCards = [jokers[0]];
+                }
+            } else if (normals.length > 0) {
+                // 일반 카드 우선 사용 (공격/특수 카드 보존)
+                // 같은 숫자 묶기
+                const normalGroups = {};
+                normals.forEach(pc => {
+                    const val = pc.card.value;
+                    if (!normalGroups[val]) normalGroups[val] = [];
+                    normalGroups[val].push(pc);
+                });
+
+                let bestNormalGroup = null;
+                for (let val in normalGroups) {
+                    if (!bestNormalGroup || normalGroups[val].length > bestNormalGroup.length) {
+                        bestNormalGroup = normalGroups[val];
+                    }
+                }
+                chosenCards = bestNormalGroup;
+            } else if (sevens.length > 0 && !isEmergency) {
+                // 7번 카드 사용 (긴급 상황 아닐 때)
+                chosenCards = [sevens[0]];
+            } else if (twos.length > 0) {
+                chosenCards = [twos[0]];
+            } else if (aces.length > 0 && isEmergency) {
+                // 긴급할 때만 A 사용
+                chosenCards = [aces[0]];
+            } else if (jokers.length > 0 && isEmergency) {
+                // 긴급할 때만 조커 사용
+                chosenCards = [jokers[0]];
+            } else {
+                // 어쩔 수 없이 아무거나
+                chosenCards = [playable[0]];
+            }
+
+            // 같은 숫자 카드 묶기 (선택된 카드와 같은 숫자가 더 있으면 추가)
+            if (chosenCards.length > 0) {
+                const chosenValue = chosenCards[0].card.value;
+                const sameValueCards = playable.filter(pc => pc.card.value === chosenValue);
+                if (sameValueCards.length > chosenCards.length) {
+                    chosenCards = sameValueCards;
                 }
             }
+
+            const bestGroup = chosenCards;
 
             const indices = bestGroup.map(pc => pc.index).sort((a, b) => b - a);
             const cards = indices.map(i => player.hand[i]);
