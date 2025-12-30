@@ -811,7 +811,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.3.7</div>
+        <div class="version-badge">v2.3.8</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -1548,6 +1548,85 @@
             });
         }
 
+        // 게임 재시작 (방장만)
+        function restartGame() {
+            if (!isHost) return;
+
+            roomRef.once('value').then(snapshot => {
+                const roomData = snapshot.val();
+                if (!roomData) return;
+
+                // 연결된 플레이어만 추림
+                const playerIds = Object.keys(roomData.players).filter(pid => roomData.players[pid].connected);
+
+                if (playerIds.length < 2) {
+                    alert('최소 2명이 필요합니다!');
+                    return;
+                }
+
+                // 승자 확인 (이전 게임 결과)
+                const prevWinnerId = roomData.gameState ? roomData.gameState.winner : null;
+                let startPlayerIndex = 0;
+
+                // 승자가 존재하고 여전히 방에 있다면 그 사람부터 시작
+                if (prevWinnerId && playerIds.includes(prevWinnerId)) {
+                    startPlayerIndex = playerIds.indexOf(prevWinnerId);
+                }
+
+                // 덱 생성 및 셔플
+                const deck = createDeck();
+                shuffle(deck);
+                playShuffleSound();
+
+                // 카드 분배 (5장씩)
+                const hands = {};
+                playerIds.forEach(pid => {
+                    hands[pid] = [];
+                    for (let i = 0; i < 5; i++) {
+                        hands[pid].push(deck.pop());
+                    }
+                });
+
+                // 첫 카드
+                let firstCard;
+                do {
+                    firstCard = deck.pop();
+                    if (isSpecialCard(firstCard)) {
+                        deck.unshift(firstCard);
+                    } else {
+                        break;
+                    }
+                } while (true);
+
+                // 업데이트 데이터 구성
+                const updates = {};
+
+                // 1. 게임 상태 초기화
+                updates['status'] = 'playing';
+                updates['gameState'] = {
+                    deck: deck,
+                    discardPile: [firstCard],
+                    currentPlayerIndex: startPlayerIndex, // 승자부터 시작
+                    direction: 1,
+                    attackStack: 0,
+                    attackType: null,
+                    currentSuit: firstCard.suit,
+                    skipTurns: 0,
+                    playerOrder: playerIds,
+                    hands: hands,
+                    prevWinner: prevWinnerId // 디버깅용
+                };
+
+                // 2. 플레이어 상태 초기화 (파산, 등수 제거)
+                playerIds.forEach(pid => {
+                    updates[`players/${pid}/isBankrupt`] = null;
+                    updates[`players/${pid}/rank`] = null;
+                });
+
+                roomRef.update(updates).catch(err => alert('재시작 오류: ' + err.message));
+            });
+        }
+
         function createDeck() {
             const suits = ['spade', 'heart', 'diamond', 'club'];
             const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
@@ -1731,9 +1810,14 @@
                         ${isMe ? '🎉승리했습니다🥳' : '패배하였습니다...😢'}
                     </div>
                 </div>
-                <button class="btn btn-primary" style="width:100%;margin-top:15px;" onclick="location.reload()">
-                    🔄 다시 하기
+                <button class="btn btn-primary" style="width:100%;margin-top:15px;background-color:#6b7280;" onclick="location.reload()">
+                    🚪 대기실로 나가기
                 </button>
+                ${isHost ? `
+                <button class="btn btn-primary" style="width:100%;margin-top:10px;" onclick="restartGame()">
+                    🔄 게임 재시작 (승자 선)
+                </button>
+                ` : ''}
             `;
 
             document.getElementById('message').innerHTML = resultHtml;
