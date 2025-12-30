@@ -274,6 +274,10 @@
             border: 1px solid #333;
             box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
             font-size: 0.65rem;
+            opacity: 0.95;
+            /* 기본 투명도 */
+            background-color: white;
+            /* 투명도 적용 시 배경 필요 */
         }
 
         .card:first-child {
@@ -283,12 +287,16 @@
         .card:hover:not(.disabled) {
             transform: translateY(-10px);
             z-index: 10;
+            opacity: 1 !important;
+            /* 호버 시 불투명 */
         }
 
         .card.selected {
             transform: translateY(-20px);
             box-shadow: 0 0 15px #4ade80;
             border-color: #4ade80;
+            opacity: 1 !important;
+            /* 선택 시 불투명 */
         }
 
         .card.playable:not(.selected) {
@@ -772,7 +780,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.1.1</div>
+        <div class="version-badge">v2.1.2</div>
 
         <div id="main-menu">
             <div class="input-group">
