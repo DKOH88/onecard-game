@@ -783,7 +783,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.2.1</div>
+        <div class="version-badge">v2.2.2</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -1046,6 +1046,32 @@
                 gainNode.connect(audioContext.destination);
 
                 noise.start(t);
+            } catch (e) { }
+        }
+
+        function playSuitChangeSound() {
+            // 띠리링~ (문양 변경 - 아르페지오 효과)
+            try {
+                const now = audioContext.currentTime;
+                const notes = [523.25, 659.25, 783.99, 1046.50]; // C E G C (도미솔도)
+
+                notes.forEach((freq, i) => {
+                    const osc = audioContext.createOscillator();
+                    const gain = audioContext.createGain();
+
+                    osc.connect(gain);
+                    gain.connect(audioContext.destination);
+
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now + i * 0.1);
+
+                    gain.gain.setValueAtTime(0, now + i * 0.1);
+                    gain.gain.linearRampToValueAtTime(0.1, now + i * 0.1 + 0.05);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.3);
+
+                    osc.start(now + i * 0.1);
+                    osc.stop(now + i * 0.1 + 0.3);
+                });
             } catch (e) { }
         }
 
@@ -2157,6 +2183,9 @@
                 const playerName = humanPlayer ? humanPlayer.name : '플레이어';
                 showNotification(`${playerName}님이 문양을 [${suitNames[suit]}]로 바꿨습니다!`);
 
+                showNotification(`${playerName}님이 문양을 [${suitNames[suit]}]로 바꿨습니다!`);
+                playSuitChangeSound(); // 소리 추가
+
                 setMessage(`♻️ ${suitSymbols[suit]} 선택!`);
 
                 // 7카드로 마지막 카드를 냈을 때 승리 체크 (온라인과 동일)
@@ -2359,7 +2388,10 @@
 
                 // AI 7카드 무늬 변경 알림 (온라인과 동일)
                 const suitNames = { 'spade': '♠ 스페이드', 'heart': '♥ 하트', 'diamond': '♦ 다이아몬드', 'club': '♣ 클로버' };
+                // AI 7카드 무늬 변경 알림 (온라인과 동일)
+                const suitNames = { 'spade': '♠ 스페이드', 'heart': '♥ 하트', 'diamond': '♦ 다이아몬드', 'club': '♣ 클로버' };
                 showNotification(`${player.name}님이 문양을 [${suitNames[best]}]로 바꿨습니다!`);
+                playSuitChangeSound(); // 소리 추가
             }
 
             handleSpecialCardsSingle(cards);
@@ -2576,7 +2608,10 @@
 
                 // 알림 메시지 생성
                 const suitNames = { 'spade': '♠ 스페이드', 'heart': '♥ 하트', 'diamond': '♦ 다이아몬드', 'club': '♣ 클로버' };
+                // 알림 메시지 생성
+                const suitNames = { 'spade': '♠ 스페이드', 'heart': '♥ 하트', 'diamond': '♦ 다이아몬드', 'club': '♣ 클로버' };
                 const msg = `${myNickname}님이 문양을 [${suitNames[suit]}]로 바꿨습니다!`;
+                playSuitChangeSound(); // 소리 추가
 
                 const updates = {
                     deck: newDeck,
