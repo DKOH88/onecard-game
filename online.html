@@ -811,7 +811,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.3.9</div>
+        <div class="version-badge">v2.3.10</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -2894,6 +2894,19 @@
                 el.style.display = 'none';
             }, 5000);
         }
+        // 새로고침/뒤로가기 방지
+        window.addEventListener('beforeunload', (e) => {
+            // 게임 화면이 보이고, 게임이 종료되지 않았을 때만 경고
+            const gameScreen = document.getElementById('game-screen');
+            const isPlaying = gameScreen && !gameScreen.classList.contains('hidden');
+
+            // 싱글 플레이거나 온라인 룸에 연결되어 있을 때
+            if (isPlaying) {
+                // 게임 종료 상태가 아니어야 함 (승리/패배 화면이 뜬 상태면 경고 불필요할 수도 있지만, 대기실 나가기 전이므로 띄우는 게 안전)
+                e.preventDefault();
+                e.returnValue = ''; // 표준
+            }
+        });
     </script>
 </body>
 
