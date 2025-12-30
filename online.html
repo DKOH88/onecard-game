@@ -811,7 +811,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.3.11</div>
+        <div class="version-badge">v2.3.12</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -2970,6 +2970,41 @@
                 // 게임 종료 상태가 아니어야 함 (승리/패배 화면이 뜬 상태면 경고 불필요할 수도 있지만, 대기실 나가기 전이므로 띄우는 게 안전)
                 e.preventDefault();
                 e.returnValue = ''; // 표준
+            }
+        });
+
+        // 키보드 단축키 (Enter)
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                // 모달이나 입력창이 떠있으면 무시 (닉네임 입력 등)
+                if (!document.getElementById('main-menu').classList.contains('hidden') ||
+                    !document.getElementById('join-form').classList.contains('hidden') ||
+                    !document.getElementById('single-player-form').classList.contains('hidden')) {
+                    return;
+                }
+
+                const gameScreen = document.getElementById('game-screen');
+                if (!gameScreen || gameScreen.classList.contains('hidden')) return;
+
+                // 내 턴인지 확인
+                let isMyTurn = false;
+                if (isSinglePlayer) {
+                    const player = players.find(p => p.isHuman);
+                    isMyTurn = singlePlayerState.currentPlayerIndex === players.indexOf(player);
+                } else {
+                    const currentPlayer = players[gameState.currentPlayerIndex];
+                    isMyTurn = currentPlayer && currentPlayer.isMe;
+                }
+
+                if (isMyTurn) {
+                    e.preventDefault(); // 기본 동작(혹시 모를 폼 제출 등) 방지
+
+                    if (selectedCards.length > 0) {
+                        playSelectedCardsOnline();
+                    } else {
+                        drawCardOnline();
+                    }
+                }
             }
         });
     </script>
