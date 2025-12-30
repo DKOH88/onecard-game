@@ -811,7 +811,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.3.16</div>
+        <div class="version-badge">v2.3.17</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -3032,9 +3032,17 @@
                             }
 
                             if (hasPlayableCard) {
-                                // 토스트 메시지나 알림으로 알려줌
-                                showNotification('낼 수 있는 카드가 있습니다! 카드를 선택해주세요.', 'warning');
-                                console.log('DEBUG: Playable card exists, ignoring Draw shortcut.');
+                                // 1초 이내에 다시 눌렀는지 확인 (강제 드로우)
+                                const now = Date.now();
+                                if (window.lastEnterPressTime && (now - window.lastEnterPressTime < 1000)) {
+                                    // 더블 엔터 -> 강제 드로우
+                                    drawCardOnline();
+                                    window.lastEnterPressTime = 0;
+                                } else {
+                                    // 첫 번째 엔터 -> 경고 메시지
+                                    showNotification('카드를 낼 수 있습니다! 드로우하려면 엔터를 한 번 더 누르세요.', 'warning');
+                                    window.lastEnterPressTime = now;
+                                }
                                 return;
                             }
 
