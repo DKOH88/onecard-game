@@ -783,7 +783,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.1.9</div>
+        <div class="version-badge">v2.2.0</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -955,16 +955,96 @@
                         filter.connect(gainNode);
                         gainNode.connect(audioContext.destination);
 
-                        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+                        gainNode.gain.setValueAtTime(0.05, audioContext.currentTime);
+                        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1);
 
                         whiteNoise.start(audioContext.currentTime);
                         whiteNoise.stop(audioContext.currentTime + 0.1);
-                    }, i * 80);
+                    }, i * 50);
                 }
             } catch (e) {
-                console.log('Shuffle sound not available');
+                console.log('Shuffle sound error');
             }
+        }
+
+        function playCardPlaySound() {
+            // 촥! (카드 내는 소리) - 짧고 강한 고주파 노이즈 + 타격음
+            try {
+                const t = audioContext.currentTime;
+
+                // 1. 타격감 (Low Frequency thump)
+                const osc = audioContext.createOscillator();
+                const oscGain = audioContext.createGain();
+                osc.connect(oscGain);
+                oscGain.connect(audioContext.destination);
+
+                osc.frequency.setValueAtTime(150, t);
+                osc.frequency.exponentialRampToValueAtTime(40, t + 0.1);
+
+                oscGain.gain.setValueAtTime(0.5, t);
+                oscGain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+
+                osc.start(t);
+                osc.stop(t + 0.1);
+
+                // 2. 마찰음 (High Frequency Snap)
+                const bufferSize = audioContext.sampleRate * 0.1;
+                const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+
+                const noise = audioContext.createBufferSource();
+                noise.buffer = buffer;
+                const noiseFilter = audioContext.createBiquadFilter();
+                noiseFilter.type = 'highpass';
+                noiseFilter.frequency.value = 800;
+
+                const noiseGain = audioContext.createGain();
+                noiseGain.gain.setValueAtTime(0.8, t);
+                noiseGain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+
+                noise.connect(noiseFilter);
+                noiseFilter.connect(noiseGain);
+                noiseGain.connect(audioContext.destination);
+
+                noise.start(t);
+            } catch (e) { }
+        }
+
+        function playCardDrawSound() {
+            // 스윽 (카드 뽑는 소리) - 부드러운 노이즈 스윕
+            try {
+                const t = audioContext.currentTime;
+                const duration = 0.2;
+
+                const bufferSize = audioContext.sampleRate * duration;
+                const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+
+                const noise = audioContext.createBufferSource();
+                noise.buffer = buffer;
+
+                const filter = audioContext.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(400, t);
+                filter.frequency.linearRampToValueAtTime(1000, t + duration); // 스윽 올라가는 느낌
+
+                const gainNode = audioContext.createGain();
+                gainNode.gain.setValueAtTime(0, t);
+                gainNode.gain.linearRampToValueAtTime(0.3, t + 0.05); // Fade in
+                gainNode.gain.linearRampToValueAtTime(0, t + duration); // Fade out
+
+                noise.connect(filter);
+                filter.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                noise.start(t);
+            } catch (e) { }
         }
 
         function playGameOverSound() {
@@ -1529,7 +1609,7 @@
                 `;
             }).join('');
 
-            // 낼 카드가 없으면 덱 하이라이트
+            // 덱 하이라이트
             const deckEl = document.querySelector('.deck');
             if (deckEl) deckEl.classList.remove('highlight');
 
@@ -1740,6 +1820,7 @@
                 }
                 if (newDeck.length > 0) {
                     newHand.push(newDeck.pop());
+                    playCardDrawSound(); // 소리 추가 (온라인)
                 }
             }
 
@@ -1772,6 +1853,7 @@
                 attackStack: 0,
                 attackType: null,
                 currentSuit: nextSuit,
+                skipTurns: 0,
                 [`hands/${myPlayerId}`]: newHand
             };
 
@@ -1869,7 +1951,7 @@
                 const valueClass = isNormalSuit ? `val-${card.value}` : '';
                 const opacity = isTop ? '1' : (idx === topCards.length - 2 ? '0.7' : '0.4');
                 return `
-                    <div class="card ${card.suit} ${valueClass}" 
+                    <div class="card ${card.suit} ${valueClass}"
                          style="width:${isTop ? 60 : 45}px;height:${isTop ? 85 : 65}px;opacity:${opacity};cursor:default;position:relative;z-index:${idx + 10};">
                     </div>
                 `;
@@ -1972,6 +2054,7 @@
 
             selectedCards.sort((a, b) => b - a).forEach(i => player.hand.splice(i, 1));
             cards.forEach(card => singlePlayerState.discardPile.push(card));
+            playCardPlaySound(); // 소리 추가 (싱글 내부)
 
             const lastCard = cards[cards.length - 1];
             if (lastCard.suit !== 'black-joker' && lastCard.suit !== 'color-joker') {
@@ -2118,7 +2201,10 @@
 
             for (let i = 0; i < count; i++) {
                 if (singlePlayerState.deck.length === 0) reshuffleDeckSingle();
-                if (singlePlayerState.deck.length > 0) player.hand.push(singlePlayerState.deck.pop());
+                if (singlePlayerState.deck.length > 0) {
+                    player.hand.push(singlePlayerState.deck.pop());
+                    if (player.isHuman) playCardDrawSound(); // 소리 추가
+                }
             }
 
             if (singlePlayerState.attackStack > 0) {
@@ -2248,6 +2334,7 @@
 
             indices.forEach(i => player.hand.splice(i, 1));
             cards.forEach(card => singlePlayerState.discardPile.push(card));
+            playCardPlaySound(); // AI 소리 추가
 
             const lastCard = cards[cards.length - 1];
             if (lastCard.suit !== 'black-joker' && lastCard.suit !== 'color-joker') {
@@ -2364,6 +2451,8 @@
 
             console.log('카드 냄:', cardsToPlay.map(c => c.suit + c.value).join(', '),
                 'currentSuit 변경:', gameState.currentSuit, '->', newCurrentSuit);
+
+            playCardPlaySound(); // 소리 추가 (온라인)
 
             // 특수 카드 효과
             const value = cardsToPlay[0].value;
