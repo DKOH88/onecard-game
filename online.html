@@ -811,7 +811,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.5.2</div>
+        <div class="version-badge">v2.5.3</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -2577,6 +2577,12 @@
                 if (sameValueCards.length > chosenCards.length) {
                     chosenCards = sameValueCards;
                 }
+            }
+
+            // 안전장치: chosenCards가 비어있으면 아무 카드나 선택
+            if (chosenCards.length === 0) {
+                console.log('AI DEBUG: chosenCards was empty, using fallback');
+                chosenCards = [playable[0]];
             }
 
             const bestGroup = chosenCards;
