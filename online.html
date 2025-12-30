@@ -811,7 +811,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.5.3</div>
+        <div class="version-badge">v2.5.4</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -2473,6 +2473,42 @@
             }
         }
 
+        // === 카드 카운팅 AI 헬퍼 ===
+        function getCardCounts() {
+            // 덱 구성: 각 숫자 4장씩 (스페이드/하트/다이아/클로버), 조커 2장
+            const totalCards = {
+                '2': 4, '3': 4, '4': 4, '5': 4, '6': 4, '7': 4, '8': 4, '9': 4, '10': 4,
+                'J': 4, 'Q': 4, 'K': 4, 'A': 4, 'JOKER': 2
+            };
+            const suitTotal = { 'spade': 13, 'heart': 13, 'diamond': 13, 'club': 13 };
+
+            // 버린 카드 집계
+            const playedValues = {};
+            const playedSuits = {};
+
+            singlePlayerState.discardPile.forEach(card => {
+                const val = card.value;
+                playedValues[val] = (playedValues[val] || 0) + 1;
+
+                if (card.suit !== 'black-joker' && card.suit !== 'color-joker') {
+                    playedSuits[card.suit] = (playedSuits[card.suit] || 0) + 1;
+                }
+            });
+
+            // 남은 카드 계산
+            const remainingValues = {};
+            for (let val in totalCards) {
+                remainingValues[val] = totalCards[val] - (playedValues[val] || 0);
+            }
+
+            const remainingSuits = {};
+            for (let suit in suitTotal) {
+                remainingSuits[suit] = suitTotal[suit] - (playedSuits[suit] || 0);
+            }
+
+            return { remainingValues, remainingSuits, playedValues, playedSuits };
+        }
+
         function aiTurnSingle() {
             const player = players[singlePlayerState.currentPlayerIndex];
             if (player.isBankrupt || player.isHuman) return;
@@ -2490,7 +2526,8 @@
                 return;
             }
 
-            // === 스마트 AI 전략 ===
+            // === 카드 카운팅 AI 전략 ===
+            const cardCounts = getCardCounts();
 
             // 1. 카드 분류
             const jokers = playable.filter(pc => pc.card.suit === 'black-joker' || pc.card.suit === 'color-joker');
@@ -2510,8 +2547,14 @@
             const humanPlayer = players.find(p => p.isHuman);
             const humanCardCount = humanPlayer ? humanPlayer.hand.length : 99;
             const isUnderAttack = singlePlayerState.attackStack > 0;
-            const isEmergency = myCardCount <= 3; // 카드가 3장 이하면 긴급 상황
-            const canWinNow = myCardCount === 1; // 이번에 내면 승리
+            const isEmergency = myCardCount <= 3;
+            const canWinNow = myCardCount === 1;
+
+            // 카운팅 기반 추가 분석
+            const remaining2s = cardCounts.remainingValues['2'] || 0;
+            const remainingAs = cardCounts.remainingValues['A'] || 0;
+            const remainingJokers = cardCounts.remainingValues['JOKER'] || 0;
+            const playerLikelyHasDefense = (remaining2s + remainingAs + remainingJokers) > 2;
 
             let chosenCards = [];
 
@@ -2530,47 +2573,48 @@
                 chosenCards = [playable[0]];
             } else if (humanCardCount <= 2 && (twos.length > 0 || jokers.length > 0)) {
                 // 플레이어가 카드 적을 때 -> 공격!
-                if (twos.length > 0) {
-                    // 같은 숫자 2 여러 장 모아서 공격
-                    chosenCards = twos;
-                } else if (jokers.length > 0 && humanCardCount === 1) {
-                    // 원카드 상태면 조커로 확실히!
-                    chosenCards = [jokers[0]];
-                }
-            } else if (normals.length > 0) {
-                // 일반 카드 우선 사용 (공격/특수 카드 보존)
-                // 같은 숫자 묶기
-                const normalGroups = {};
-                normals.forEach(pc => {
-                    const val = pc.card.value;
-                    if (!normalGroups[val]) normalGroups[val] = [];
-                    normalGroups[val].push(pc);
-                });
-
-                let bestNormalGroup = null;
-                for (let val in normalGroups) {
-                    if (!bestNormalGroup || normalGroups[val].length > bestNormalGroup.length) {
-                        bestNormalGroup = normalGroups[val];
+                // 카운팅: 방어 카드가 많이 남아있으면 공격 자제
+                if (!playerLikelyHasDefense || humanCardCount === 1) {
+                    if (twos.length > 0) {
+                        chosenCards = twos;
+                    } else if (jokers.length > 0) {
+                        chosenCards = [jokers[0]];
                     }
                 }
-                chosenCards = bestNormalGroup;
-            } else if (sevens.length > 0 && !isEmergency) {
-                // 7번 카드 사용 (긴급 상황 아닐 때)
-                chosenCards = [sevens[0]];
-            } else if (twos.length > 0) {
-                chosenCards = [twos[0]];
-            } else if (aces.length > 0 && isEmergency) {
-                // 긴급할 때만 A 사용
-                chosenCards = [aces[0]];
-            } else if (jokers.length > 0 && isEmergency) {
-                // 긴급할 때만 조커 사용
-                chosenCards = [jokers[0]];
-            } else {
-                // 어쩔 수 없이 아무거나
-                chosenCards = [playable[0]];
             }
 
-            // 같은 숫자 카드 묶기 (선택된 카드와 같은 숫자가 더 있으면 추가)
+            // 위 조건에서 선택 안됐으면 일반 전략
+            if (chosenCards.length === 0) {
+                if (normals.length > 0) {
+                    // 일반 카드 우선 사용
+                    const normalGroups = {};
+                    normals.forEach(pc => {
+                        const val = pc.card.value;
+                        if (!normalGroups[val]) normalGroups[val] = [];
+                        normalGroups[val].push(pc);
+                    });
+
+                    let bestNormalGroup = null;
+                    for (let val in normalGroups) {
+                        if (!bestNormalGroup || normalGroups[val].length > bestNormalGroup.length) {
+                            bestNormalGroup = normalGroups[val];
+                        }
+                    }
+                    chosenCards = bestNormalGroup;
+                } else if (sevens.length > 0 && !isEmergency) {
+                    chosenCards = [sevens[0]];
+                } else if (twos.length > 0) {
+                    chosenCards = [twos[0]];
+                } else if (aces.length > 0 && isEmergency) {
+                    chosenCards = [aces[0]];
+                } else if (jokers.length > 0 && isEmergency) {
+                    chosenCards = [jokers[0]];
+                } else {
+                    chosenCards = [playable[0]];
+                }
+            }
+
+            // 같은 숫자 카드 묶기
             if (chosenCards.length > 0) {
                 const chosenValue = chosenCards[0].card.value;
                 const sameValueCards = playable.filter(pc => pc.card.value === chosenValue);
@@ -2579,9 +2623,8 @@
                 }
             }
 
-            // 안전장치: chosenCards가 비어있으면 아무 카드나 선택
+            // 안전장치
             if (chosenCards.length === 0) {
-                console.log('AI DEBUG: chosenCards was empty, using fallback');
                 chosenCards = [playable[0]];
             }
 
@@ -2592,33 +2635,42 @@
 
             indices.forEach(i => player.hand.splice(i, 1));
             cards.forEach(card => singlePlayerState.discardPile.push(card));
-            playCardPlaySound(); // AI 소리 추가
+            playCardPlaySound();
 
             const lastCard = cards[cards.length - 1];
             if (lastCard.suit !== 'black-joker' && lastCard.suit !== 'color-joker') {
                 singlePlayerState.currentSuit = lastCard.suit;
             }
 
-            // AI가 7을 냈을 때 무늬 선택
+            // AI가 7을 냈을 때 무늬 선택 (카운팅 기반!)
             if (lastCard.value === '7') {
-                const suitCounts = {};
-                player.hand.forEach(c => {
-                    if (c.suit !== 'black-joker' && c.suit !== 'color-joker') {
-                        suitCounts[c.suit] = (suitCounts[c.suit] || 0) + 1;
-                    }
+                // 카운팅: 게임에 남은 무늬 수 + 내 손에 있는 무늬 수 종합 고려
+                const suitScores = {};
+                ['spade', 'heart', 'diamond', 'club'].forEach(suit => {
+                    // 내 손에 있는 해당 무늬 카드 수
+                    const myCount = player.hand.filter(c => c.suit === suit).length;
+                    // 게임에 남아있는 해당 무늬 카드 수 (확률적으로 유리)
+                    const gameRemaining = cardCounts.remainingSuits[suit] || 0;
+                    // 점수: 내 카드 * 3 + 게임 남은 수 (내 카드 우선)
+                    suitScores[suit] = (myCount * 3) + gameRemaining;
                 });
-                let best = singlePlayerState.currentSuit, max = 0;
-                for (let s in suitCounts) {
-                    if (suitCounts[s] > max) { max = suitCounts[s]; best = s; }
-                }
-                singlePlayerState.currentSuit = best;
 
-                // AI 7카드 무달 변경 알림 (색상 적용)
+                let bestSuit = singlePlayerState.currentSuit;
+                let maxScore = 0;
+                for (let suit in suitScores) {
+                    if (suitScores[suit] > maxScore) {
+                        maxScore = suitScores[suit];
+                        bestSuit = suit;
+                    }
+                }
+                singlePlayerState.currentSuit = bestSuit;
+
+                // 알림
                 const suitColors = { 'spade': '#000', 'heart': '#e11d48', 'diamond': '#e11d48', 'club': '#000' };
                 const suitNameText = { 'spade': '♠ 스페이드', 'heart': '♥ 하트', 'diamond': '♦ 다이아몬드', 'club': '♣ 클로버' };
-                const coloredSuit = `<span style="color:${suitColors[best]};background:white;padding:2px 6px;border-radius:4px;">${suitNameText[best]}</span>`;
+                const coloredSuit = `<span style="color:${suitColors[bestSuit]};background:white;padding:2px 6px;border-radius:4px;">${suitNameText[bestSuit]}</span>`;
                 showNotification(`${player.name}님이 문양을 ${coloredSuit} (으)로 바꿨습니다!`);
-                playSuitChangeSound(); // 소리 추가
+                playSuitChangeSound();
             }
 
             handleSpecialCardsSingle(cards);
