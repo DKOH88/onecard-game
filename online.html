@@ -811,7 +811,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.3.14</div>
+        <div class="version-badge">v2.3.15</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -2983,13 +2983,6 @@
                     const gameScreen = document.getElementById('game-screen');
                     if (!gameScreen || gameScreen.classList.contains('hidden')) {
                         console.log('DEBUG: Game screen hidden');
-                        return;
-                    }
-
-                    // 모달 확인
-                    if (!document.getElementById('join-form').classList.contains('hidden') ||
-                        !document.getElementById('single-player-form').classList.contains('hidden')) {
-                        console.log('DEBUG: Modal open');
                         return;
                     }
 
