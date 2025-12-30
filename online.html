@@ -811,7 +811,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.5.1</div>
+        <div class="version-badge">v2.5.2</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -2322,11 +2322,13 @@
                 singlePlayerState.currentSuit = suit;
                 document.getElementById('suit-selector').style.display = 'none';
 
-                // 무늬 변경 알림 팝업 (온라인과 동일)
-                const suitNames = { 'spade': '♠ 스페이드', 'heart': '♥ 하트', 'diamond': '♦ 다이아몬드', 'club': '♣ 클로버' };
+                // 무늬 변경 알림 팝업 (색상 적용)
+                const suitColors = { 'spade': '#000', 'heart': '#e11d48', 'diamond': '#e11d48', 'club': '#000' };
+                const suitNameText = { 'spade': '♠ 스페이드', 'heart': '♥ 하트', 'diamond': '♦ 다이아몬드', 'club': '♣ 클로버' };
+                const coloredSuit = `<span style="color:${suitColors[suit]};background:white;padding:2px 6px;border-radius:4px;">${suitNameText[suit]}</span>`;
                 const humanPlayer = players.find(p => p.isHuman);
                 const playerName = humanPlayer ? humanPlayer.name : '플레이어';
-                showNotification(`${playerName}님이 문양을 [${suitNames[suit]}]로 바꿨습니다!`);
+                showNotification(`${playerName}님이 문양을 ${coloredSuit} (으)로 바꿨습니다!`);
                 playSuitChangeSound(); // 소리 추가
 
                 setMessage(`♻️ ${suitSymbols[suit]} 선택!`);
