@@ -811,7 +811,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.3.17</div>
+        <div class="version-badge">v2.3.18</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -3053,6 +3053,19 @@
                     console.error('Keyboard Error:', err);
                 }
             }
+        });
+
+        // 페이지 로드 시 저장된 닉네임 불러오기
+        (function initNickname() {
+            const saved = localStorage.getItem('onecard_nickname');
+            if (saved) {
+                document.getElementById('nickname-input').value = saved;
+            }
+        })();
+
+        // 닉네임 입력 시 저장
+        document.getElementById('nickname-input').addEventListener('input', function (e) {
+            localStorage.setItem('onecard_nickname', e.target.value);
         });
     </script>
 </body>
