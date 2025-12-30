@@ -227,6 +227,8 @@
             padding: 20px 25px;
             border-radius: 15px;
             min-width: 200px;
+            position: relative;
+            /* 배지 위치 잡기 위해 추가 */
         }
 
         .player-area.current-turn {
@@ -809,7 +811,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.3.6</div>
+        <div class="version-badge">v2.3.7</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -1980,11 +1982,15 @@
                     // AI 카드 (뒷면)
                     slotEl.innerHTML = `
                         <div class="player-area opponent-area ${isCurrent ? 'current-turn' : ''} ${p.isBankrupt ? 'bankrupt' : ''}">
+                            <!-- 등수/파산 배지 상단으로 이동 -->
+                            <div style="position:absolute; top:-15px; left:50%; transform:translateX(-50%); white-space:nowrap; z-index:5;">
+                                ${p.isBankrupt ? '<span style="background:#ef4444;padding:4px 8px;border-radius:15px;font-size:0.85rem;box-shadow:0 2px 5px rgba(0,0,0,0.3);">파산</span>' : ''}
+                                ${p.rank ? `<span style="background:#4ade80;padding:4px 8px;border-radius:15px;font-size:0.85rem;box-shadow:0 2px 5px rgba(0,0,0,0.3);color:#000;font-weight:bold;">${p.rank}등</span>` : ''}
+                            </div>
+                            
                             <div class="player-label">
                                 ${p.name}
                                 <span class="card-count ${p.hand.length === 1 ? 'warning' : ''}">${p.hand.length}장</span>
-                                ${p.isBankrupt ? '<span style="background:#ef4444;padding:2px 6px;border-radius:5px;font-size:0.8rem;">파산</span>' : ''}
-                                ${p.rank ? `<span style="background:#4ade80;padding:2px 6px;border-radius:5px;font-size:0.8rem;">${p.rank}등</span>` : ''}
                             </div>
                             <div class="cards-row">
                                 ${p.rank ? '' : p.hand.map(() => `<div class="card card-back opponent-card"></div>`).join('')}
