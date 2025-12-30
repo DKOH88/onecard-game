@@ -786,7 +786,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.3.4</div>
+        <div class="version-badge">v2.3.5</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -2553,7 +2553,8 @@
                 let jSkips = 0;
 
                 if (activeCount <= 2) {
-                    jSkips = count;
+                    // 2인: 몇 장을 내든 상대방을 건너뛰어 내 차례 (Skip 1회 고정)
+                    jSkips = 1;
                 } else {
                     // 3인 이상: 1장당 2칸 이동
                     jSkips = (count * 2) - 1;
