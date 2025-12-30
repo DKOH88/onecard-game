@@ -783,7 +783,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.2.3</div>
+        <div class="version-badge">v2.2.4</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -2139,17 +2139,23 @@
                 setMessage(`🌈 +${7 * count}장!`, 'attack');
             } else if (value === 'K') {
                 const activeCount = players.filter(p => !p.isBankrupt && p.rank === null).length;
-                let kSkips = 2 * count;
-                // 2인 남았을 때: 짝수 장(2장) 내면 내 턴(홀수 스킵), 홀수 장(1장) 내면 상대 턴(짝수 스킵) 유도
-                if (activeCount <= 2 && count % 2 === 0) {
-                    kSkips -= 1;
+                let kSkips = 0;
+
+                if (activeCount <= 2) {
+                    // 2인: 짝수 장(내 턴), 홀수 장(상대 턴)
+                    kSkips = (count * 2);
+                    if (count % 2 === 0) kSkips -= 1;
+                } else {
+                    // 3인 이상: 1장당 3칸 이동 (2명 건너뛰기)
+                    // 기본 1칸 + 스킵 (count*3 - 1)
+                    kSkips = (count * 3) - 1;
                 }
+
                 singlePlayerState.skipTurns += kSkips;
-                singlePlayerState.attackStack = 0;  // 공격 초기화 추가
+                singlePlayerState.attackStack = 0;
                 singlePlayerState.attackType = null;
                 setMessage(`👑 ${kSkips}턴 스킵!`);
             } else if (value === 'Q') {
-                // 2인 플레이(또는 남은 인원이 2명 이하)에서는 Q가 J처럼 1턴 스킵으로 작동
                 const activeCount = players.filter(p => !p.isBankrupt && p.rank === null).length;
                 if (activeCount <= 2) {
                     singlePlayerState.skipTurns += 1 * count;
@@ -2158,13 +2164,24 @@
                     singlePlayerState.direction *= -1;
                     setMessage(`👸 방향 전환! ${singlePlayerState.direction === 1 ? '⟳' : '⟲'}`);
                 }
-                singlePlayerState.attackStack = 0;  // 공격 초기화 추가
+                singlePlayerState.attackStack = 0;
                 singlePlayerState.attackType = null;
             } else if (value === 'J') {
-                singlePlayerState.skipTurns += 1 * count;
-                singlePlayerState.attackStack = 0;  // 공격 초기화 추가
+                const activeCount = players.filter(p => !p.isBankrupt && p.rank === null).length;
+                let jSkips = 0;
+
+                if (activeCount <= 2) {
+                    jSkips = count; // 2인은 1장당 1스킵 (기존 유지)
+                } else {
+                    // 3인 이상: 1장당 2칸 이동 (1명 건너뛰기)
+                    // 기본 1칸 + 스킵 (count*2 - 1)
+                    jSkips = (count * 2) - 1;
+                }
+
+                singlePlayerState.skipTurns += jSkips;
+                singlePlayerState.attackStack = 0;
                 singlePlayerState.attackType = null;
-                setMessage(`🎭 ${count}턴 스킵!`);
+                setMessage(`🎭 ${jSkips}턴 스킵!`);
             } else {
                 // 일반 카드도 공격 초기화
                 singlePlayerState.attackStack = 0;
@@ -2505,16 +2522,21 @@
                 newAttackType = 'color-joker';
             } else if (value === 'K') {
                 const activeCount = players.filter(p => !p.isBankrupt && p.hand.length > 0).length;
-                let kSkips = 2 * count;
-                // 2인 남았을 때 K 로직 보정
-                if (activeCount <= 2 && count % 2 === 0) {
-                    kSkips -= 1;
+                let kSkips = 0;
+
+                if (activeCount <= 2) {
+                    // 2인: 짝수 장(내 턴), 홀수 장(상대 턴)
+                    kSkips = (count * 2);
+                    if (count % 2 === 0) kSkips -= 1;
+                } else {
+                    // 3인 이상: 1장당 3칸 이동
+                    kSkips = (count * 3) - 1;
                 }
+
                 newSkipTurns += kSkips;
                 newAttackStack = 0;
                 newAttackType = null;
             } else if (value === 'Q') {
-                // 2인 플레이(또는 남은 인원이 2명 이하)에서는 Q가 J처럼 1턴 스킵으로 작동
                 const activeCount = players.filter(p => !p.isBankrupt && p.hand.length > 0).length;
                 if (activeCount <= 2) {
                     newSkipTurns += 1 * count;
@@ -2524,7 +2546,17 @@
                 newAttackStack = 0;
                 newAttackType = null;
             } else if (value === 'J') {
-                newSkipTurns += 1 * count;
+                const activeCount = players.filter(p => !p.isBankrupt && p.hand.length > 0).length;
+                let jSkips = 0;
+
+                if (activeCount <= 2) {
+                    jSkips = count;
+                } else {
+                    // 3인 이상: 1장당 2칸 이동
+                    jSkips = (count * 2) - 1;
+                }
+
+                newSkipTurns += jSkips;
                 newAttackStack = 0;
                 newAttackType = null;
             } else {
