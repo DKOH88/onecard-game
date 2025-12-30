@@ -2976,38 +2976,66 @@
         // 키보드 단축키 (Enter)
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
-                console.log('DEBUG: Enter key pressed');
-                // 모달이나 입력창이 떠있으면 무시 (닉네임 입력 등)
-                if (!document.getElementById('main-menu').classList.contains('hidden') ||
-                    !document.getElementById('join-form').classList.contains('hidden') ||
-                    !document.getElementById('single-player-form').classList.contains('hidden')) {
-                    return;
-                }
+                try {
+                    console.log('DEBUG: Enter pressed (v2.3.14)');
 
-                const gameScreen = document.getElementById('game-screen');
-                if (!gameScreen || gameScreen.classList.contains('hidden')) return;
-
-                // 내 턴인지 확인
-                let isMyTurn = false;
-                if (isSinglePlayer) {
-                    const player = players.find(p => p.isHuman);
-                    const playerIndex = players.indexOf(player);
-                    isMyTurn = singlePlayerState.currentPlayerIndex === playerIndex;
-                    console.log(`DEBUG: SinglePlayer - Current: ${singlePlayerState.currentPlayerIndex}, MyIndex: ${playerIndex}, IsMyTurn: ${isMyTurn}`);
-                } else {
-                    const currentPlayer = players[gameState.currentPlayerIndex];
-                    isMyTurn = currentPlayer && currentPlayer.isMe;
-                    console.log(`DEBUG: Online - CurrentIndex: ${gameState.currentPlayerIndex}, IsMe: ${currentPlayer?.isMe}, IsMyTurn: ${isMyTurn}`);
-                }
-
-                if (isMyTurn) {
-                    e.preventDefault(); // 기본 동작(혹시 모를 폼 제출 등) 방지
-
-                    if (selectedCards.length > 0) {
-                        playSelectedCardsOnline();
-                    } else {
-                        drawCardOnline();
+                    // 게임 화면 표시 여부 우선 확인
+                    const gameScreen = document.getElementById('game-screen');
+                    if (!gameScreen || gameScreen.classList.contains('hidden')) {
+                        console.log('DEBUG: Game screen hidden');
+                        return;
                     }
+
+                    // 모달 확인
+                    if (!document.getElementById('join-form').classList.contains('hidden') ||
+                        !document.getElementById('single-player-form').classList.contains('hidden')) {
+                        console.log('DEBUG: Modal open');
+                        return;
+                    }
+
+                    // 내 턴 체크
+                    let isMyTurn = false;
+                    if (isSinglePlayer) {
+                        const player = players.find(p => p.isHuman);
+                        if (!player) {
+                            console.log('DEBUG: Human player not found');
+                            return;
+                        }
+                        const playerIndex = players.indexOf(player);
+                        isMyTurn = singlePlayerState.currentPlayerIndex === playerIndex;
+                        console.log(`DEBUG: Single (Current:${singlePlayerState.currentPlayerIndex}, Me:${playerIndex}, Turn:${isMyTurn})`);
+                    } else {
+                        // Online
+                        if (!gameState) {
+                            console.log('DEBUG: No gameState');
+                            return;
+                        }
+                        const currentPlayer = players[gameState.currentPlayerIndex];
+                        isMyTurn = currentPlayer && currentPlayer.isMe;
+                        console.log(`DEBUG: Online (Current:${gameState.currentPlayerIndex}, Turn:${isMyTurn})`);
+                    }
+
+                    if (isMyTurn) {
+                        // 카드 선택 여부 확인
+                        if (typeof selectedCards === 'undefined') {
+                            console.error('DEBUG: selectedCards is undefined!');
+                            return;
+                        }
+
+                        console.log(`DEBUG: Action! Selected: ${selectedCards.length}`);
+                        e.preventDefault();
+
+                        if (selectedCards.length > 0) {
+                            playSelectedCardsOnline();
+                        } else {
+                            drawCardOnline();
+                        }
+                    } else {
+                        console.log('DEBUG: Not my turn');
+                    }
+                } catch (err) {
+                    console.error('DEBUG ERROR:', err);
+                    alert('키보드 오류: ' + err.message);
                 }
             }
         });
