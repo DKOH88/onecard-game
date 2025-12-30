@@ -300,12 +300,10 @@
         }
 
         .card.playable:not(.selected) {
-            border-color: #4ade80;
-            animation: bounce-green 1s infinite;
+            border: 2px solid #4ade80 !important;
+            box-shadow: 0 0 10px #4ade80;
             z-index: 5;
             /* 움직일 때 살짝 위로 */
-            opacity: 0.7 !important;
-            /* 낼 수 있는 카드 투명도 70% */
         }
 
         .card-back {
@@ -782,7 +780,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.1.2</div>
+        <div class="version-badge">v2.1.3</div>
 
         <div id="main-menu">
             <div class="input-group">
