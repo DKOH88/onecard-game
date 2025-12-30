@@ -811,7 +811,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.5.0</div>
+        <div class="version-badge">v2.5.1</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -1924,6 +1924,12 @@
                 const { newHand, newDiscardPile, newDeck, newAttackStack, newAttackType,
                     newSkipTurns, newDirection, nextPlayerIndex } = window.pendingUpdate;
 
+                // 색상 적용된 알림 메시지 생성
+                const suitColors = { 'spade': '#000', 'heart': '#e11d48', 'diamond': '#e11d48', 'club': '#000' };
+                const suitNameText = { 'spade': '♠ 스페이드', 'heart': '♥ 하트', 'diamond': '♦ 다이아몬드', 'club': '♣ 클로버' };
+                const coloredSuit = `<span style="color:${suitColors[suit]};background:white;padding:2px 6px;border-radius:4px;">${suitNameText[suit]}</span>`;
+                const actionMsg = `${myNickname}님이 문양을 ${coloredSuit} (으)로 바꿨습니다!`;
+
                 updateGameState({
                     deck: newDeck,
                     discardPile: newDiscardPile,
@@ -1933,7 +1939,9 @@
                     attackType: newAttackType,
                     currentSuit: suit,
                     skipTurns: 0,
-                    [`hands/${myPlayerId}`]: newHand
+                    [`hands/${myPlayerId}`]: newHand,
+                    lastAction: actionMsg,
+                    lastActionId: Date.now()
                 });
 
                 window.pendingUpdate = null;
