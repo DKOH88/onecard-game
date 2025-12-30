@@ -811,7 +811,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.3.15</div>
+        <div class="version-badge">v2.3.16</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -2977,58 +2977,72 @@
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 try {
-                    console.log('DEBUG: Enter pressed (v2.3.14)');
-
                     // 게임 화면 표시 여부 우선 확인
                     const gameScreen = document.getElementById('game-screen');
                     if (!gameScreen || gameScreen.classList.contains('hidden')) {
-                        console.log('DEBUG: Game screen hidden');
                         return;
                     }
 
                     // 내 턴 체크
                     let isMyTurn = false;
+                    let myHand = [];
+
                     if (isSinglePlayer) {
                         const player = players.find(p => p.isHuman);
-                        if (!player) {
-                            console.log('DEBUG: Human player not found');
-                            return;
-                        }
+                        if (!player) return;
+
                         const playerIndex = players.indexOf(player);
                         isMyTurn = singlePlayerState.currentPlayerIndex === playerIndex;
-                        console.log(`DEBUG: Single (Current:${singlePlayerState.currentPlayerIndex}, Me:${playerIndex}, Turn:${isMyTurn})`);
+                        myHand = player.hand;
                     } else {
                         // Online
-                        if (!gameState) {
-                            console.log('DEBUG: No gameState');
-                            return;
-                        }
+                        if (!gameState) return;
                         const currentPlayer = players[gameState.currentPlayerIndex];
                         isMyTurn = currentPlayer && currentPlayer.isMe;
-                        console.log(`DEBUG: Online (Current:${gameState.currentPlayerIndex}, Turn:${isMyTurn})`);
+
+                        // 내 핸드 찾기 (Online)
+                        const me = players.find(p => p.isMe);
+                        if (me) myHand = me.hand;
                     }
 
                     if (isMyTurn) {
                         // 카드 선택 여부 확인
-                        if (typeof selectedCards === 'undefined') {
-                            console.error('DEBUG: selectedCards is undefined!');
-                            return;
-                        }
+                        if (typeof selectedCards === 'undefined') return;
 
-                        console.log(`DEBUG: Action! Selected: ${selectedCards.length}`);
                         e.preventDefault();
 
                         if (selectedCards.length > 0) {
                             playSelectedCardsOnline();
                         } else {
+                            // !!! 중요: 낼 수 있는 카드가 하나라도 있으면 드로우(Enter) 금지 !!!
+                            let hasPlayableCard = false;
+
+                            for (let card of myHand) {
+                                if (isSinglePlayer) {
+                                    if (canPlayCardSingle(card)) {
+                                        hasPlayableCard = true;
+                                        break;
+                                    }
+                                } else {
+                                    if (canPlayCard(card)) {
+                                        hasPlayableCard = true;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (hasPlayableCard) {
+                                // 토스트 메시지나 알림으로 알려줌
+                                showNotification('낼 수 있는 카드가 있습니다! 카드를 선택해주세요.', 'warning');
+                                console.log('DEBUG: Playable card exists, ignoring Draw shortcut.');
+                                return;
+                            }
+
                             drawCardOnline();
                         }
-                    } else {
-                        console.log('DEBUG: Not my turn');
                     }
                 } catch (err) {
-                    console.error('DEBUG ERROR:', err);
-                    alert('키보드 오류: ' + err.message);
+                    console.error('Keyboard Error:', err);
                 }
             }
         });
