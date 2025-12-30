@@ -811,7 +811,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.3.10</div>
+        <div class="version-badge">v2.3.11</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -2565,10 +2565,75 @@
                 </div>`;
             });
             rankHtml += '</div>';
-            rankHtml += '<button class="btn btn-primary" style="margin-top:20px;width:100%;" onclick="location.reload()">🔄 다시 하기</button>';
+            rankHtml += `
+            <div style="display:flex; flex-direction:column; gap:10px; margin-top:20px;">
+                <button class="btn btn-primary" style="width:100%;" onclick="restartSingleGame()">🔄 게임 재시작 (승자 선)</button>
+                <button class="btn btn-primary" style="width:100%; background-color:#6b7280;" onclick="location.reload()">🚪 대기실로 나가기</button>
+            </div>
+            `;
 
             document.getElementById('message').innerHTML = rankHtml;
             document.getElementById('message').style.minWidth = '300px';
+        }
+
+        function restartSingleGame() {
+            // 승자 확인 (1등)
+            const winner = players.find(p => p.rank === 1);
+            let startPlayerIndex = 0;
+            if (winner) {
+                startPlayerIndex = players.indexOf(winner);
+            }
+
+            // 플레이어 상태 초기화
+            players.forEach(p => {
+                p.hand = [];
+                p.isBankrupt = false;
+                p.rank = null;
+            });
+
+            // 덱 생성 및 셔플
+            singlePlayerState.deck = createDeck();
+            shuffle(singlePlayerState.deck);
+            playShuffleSound();
+
+            // 카드 분배
+            players.forEach(p => {
+                for (let i = 0; i < 5; i++) {
+                    p.hand.push(singlePlayerState.deck.pop());
+                }
+            });
+
+            // 첫 카드
+            let firstCard;
+            do {
+                firstCard = singlePlayerState.deck.pop();
+                if (isSpecialCard(firstCard)) {
+                    singlePlayerState.deck.unshift(firstCard);
+                } else {
+                    break;
+                }
+            } while (true);
+
+            // 상태 초기화
+            singlePlayerState.discardPile = [firstCard];
+            singlePlayerState.currentSuit = firstCard.suit;
+            singlePlayerState.currentPlayerIndex = startPlayerIndex;
+            singlePlayerState.direction = 1;
+            singlePlayerState.attackStack = 0;
+            singlePlayerState.attackType = null;
+            singlePlayerState.skipTurns = 0;
+
+            gameState = singlePlayerState; // 필요 시 동기화
+
+            renderSingle();
+
+            const currentPlayer = players[singlePlayerState.currentPlayerIndex];
+            setMessage(currentPlayer.isHuman ? '게임 시작! 당신의 턴입니다.' : `게임 시작! ${currentPlayer.name}의 턴입니다.`);
+
+            // 첫 턴이 AI라면 실행
+            if (!currentPlayer.isHuman) {
+                setTimeout(aiTurnSingle, 1000);
+            }
         }
 
         // 원본 온라인 함수 백업 (이름 변경용)
