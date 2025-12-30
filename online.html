@@ -786,7 +786,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.3.3</div>
+        <div class="version-badge">v2.3.4</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -1980,7 +1980,7 @@
                 const isTop = idx === topCards.length - 1;
                 const isNormalSuit = ['spade', 'heart', 'diamond', 'club'].includes(card.suit);
                 const valueClass = isNormalSuit ? `val-${card.value}` : '';
-                const opacity = isTop ? '1' : (idx === topCards.length - 2 ? '0.7' : '0.4');
+                const opacity = '1'; // 투명도 제거
                 return `
                     <div class="card ${card.suit} ${valueClass}"
                          style="width:${isTop ? 60 : 45}px;height:${isTop ? 85 : 65}px;opacity:${opacity};cursor:default;position:relative;z-index:${idx + 10};">
