@@ -811,7 +811,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.3.8</div>
+        <div class="version-badge">v2.3.9</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -1810,7 +1810,12 @@
                         ${isMe ? '🎉승리했습니다🥳' : '패배하였습니다...😢'}
                     </div>
                 </div>
-                <button class="btn btn-primary" style="width:100%;margin-top:15px;background-color:#6b7280;" onclick="location.reload()">
+                ${!isHost ? `
+                <button class="btn" style="width:100%;margin-top:15px;background-color:#4b5563;cursor:default;" disabled>
+                    ⏳ 방장의 재시작을 기다리는 중...
+                </button>
+                ` : ''}
+                <button class="btn btn-primary" style="width:100%;margin-top:10px;background-color:#6b7280;" onclick="location.reload()">
                     🚪 대기실로 나가기
                 </button>
                 ${isHost ? `
