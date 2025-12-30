@@ -811,7 +811,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.4.9</div>
+        <div class="version-badge">v2.5.0</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -2597,9 +2597,11 @@
                 }
                 singlePlayerState.currentSuit = best;
 
-                // AI 7카드 무늬 변경 알림 (온라인과 동일)
-                const suitNames = { 'spade': '♠ 스페이드', 'heart': '♥ 하트', 'diamond': '♦ 다이아몬드', 'club': '♣ 클로버' };
-                showNotification(`${player.name}님이 문양을 [${suitNames[best]}]로 바꿨습니다!`);
+                // AI 7카드 무달 변경 알림 (색상 적용)
+                const suitColors = { 'spade': '#000', 'heart': '#e11d48', 'diamond': '#e11d48', 'club': '#000' };
+                const suitNameText = { 'spade': '♠ 스페이드', 'heart': '♥ 하트', 'diamond': '♦ 다이아몬드', 'club': '♣ 클로버' };
+                const coloredSuit = `<span style="color:${suitColors[best]};background:white;padding:2px 6px;border-radius:4px;">${suitNameText[best]}</span>`;
+                showNotification(`${player.name}님이 문양을 ${coloredSuit} (으)로 바꿨습니다!`);
                 playSuitChangeSound(); // 소리 추가
             }
 
@@ -3027,13 +3029,13 @@
                 document.head.appendChild(style);
             }
 
-            el.textContent = msg;
+            el.innerHTML = msg;  // innerHTML으로 변경 (색상 태그 지원)
             el.style.display = 'block';
 
             if (window.notificationTimer) clearTimeout(window.notificationTimer);
             window.notificationTimer = setTimeout(() => {
                 el.style.display = 'none';
-            }, 5000);
+            }, 7000);  // 5초 -> 7초
         }
         // 새로고침/뒤로가기 방지
         window.addEventListener('beforeunload', (e) => {
