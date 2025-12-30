@@ -783,7 +783,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.2.0</div>
+        <div class="version-badge">v2.2.1</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -968,27 +968,27 @@
         }
 
         function playCardPlaySound() {
-            // 촥! (카드 내는 소리) - 짧고 강한 고주파 노이즈 + 타격음
+            // 착! (더 짧고 간결하게)
             try {
                 const t = audioContext.currentTime;
 
-                // 1. 타격감 (Low Frequency thump)
+                // 1. 타격감 (Snap) - 아주 짧게
                 const osc = audioContext.createOscillator();
                 const oscGain = audioContext.createGain();
                 osc.connect(oscGain);
                 oscGain.connect(audioContext.destination);
 
-                osc.frequency.setValueAtTime(150, t);
-                osc.frequency.exponentialRampToValueAtTime(40, t + 0.1);
+                osc.frequency.setValueAtTime(800, t); // 시작 주파수 높임 (날카롭게)
+                osc.frequency.exponentialRampToValueAtTime(100, t + 0.05); // 빠르게 떨어짐
 
-                oscGain.gain.setValueAtTime(0.5, t);
-                oscGain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+                oscGain.gain.setValueAtTime(0.8, t);
+                oscGain.gain.exponentialRampToValueAtTime(0.01, t + 0.05); // 0.05초 만에 사라짐
 
                 osc.start(t);
-                osc.stop(t + 0.1);
+                osc.stop(t + 0.05);
 
-                // 2. 마찰음 (High Frequency Snap)
-                const bufferSize = audioContext.sampleRate * 0.1;
+                // 2. 마찰음 (Click/Clack)
+                const bufferSize = audioContext.sampleRate * 0.05; // 0.05초
                 const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
                 const data = buffer.getChannelData(0);
                 for (let i = 0; i < bufferSize; i++) {
@@ -999,11 +999,11 @@
                 noise.buffer = buffer;
                 const noiseFilter = audioContext.createBiquadFilter();
                 noiseFilter.type = 'highpass';
-                noiseFilter.frequency.value = 800;
+                noiseFilter.frequency.value = 2000; // 고음역대만 사용
 
                 const noiseGain = audioContext.createGain();
-                noiseGain.gain.setValueAtTime(0.8, t);
-                noiseGain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+                noiseGain.gain.setValueAtTime(0.5, t);
+                noiseGain.gain.exponentialRampToValueAtTime(0.01, t + 0.03);
 
                 noise.connect(noiseFilter);
                 noiseFilter.connect(noiseGain);
@@ -1014,10 +1014,10 @@
         }
 
         function playCardDrawSound() {
-            // 스윽 (카드 뽑는 소리) - 부드러운 노이즈 스윕
+            // 스윽 (종이 넘기는 소리)
             try {
                 const t = audioContext.currentTime;
-                const duration = 0.2;
+                const duration = 0.15; // 약간 더 짧게
 
                 const bufferSize = audioContext.sampleRate * duration;
                 const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
@@ -1029,15 +1029,17 @@
                 const noise = audioContext.createBufferSource();
                 noise.buffer = buffer;
 
+                // Bandpass로 종이 특유의 '사각' 소리 구현
                 const filter = audioContext.createBiquadFilter();
-                filter.type = 'lowpass';
-                filter.frequency.setValueAtTime(400, t);
-                filter.frequency.linearRampToValueAtTime(1000, t + duration); // 스윽 올라가는 느낌
+                filter.type = 'bandpass';
+                filter.Q.value = 1;
+                filter.frequency.setValueAtTime(1000, t);
+                filter.frequency.linearRampToValueAtTime(2500, t + duration); // 주파수 스윕
 
                 const gainNode = audioContext.createGain();
                 gainNode.gain.setValueAtTime(0, t);
-                gainNode.gain.linearRampToValueAtTime(0.3, t + 0.05); // Fade in
-                gainNode.gain.linearRampToValueAtTime(0, t + duration); // Fade out
+                gainNode.gain.linearRampToValueAtTime(0.5, t + 0.02); // 빠른 어택
+                gainNode.gain.linearRampToValueAtTime(0, t + duration); // 페이드 아웃
 
                 noise.connect(filter);
                 filter.connect(gainNode);
