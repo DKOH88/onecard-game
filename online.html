@@ -778,7 +778,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.1.6</div>
+        <div class="version-badge">v2.1.7</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -2022,10 +2022,16 @@
                 singlePlayerState.attackType = 'color-joker';
                 setMessage(`🌈 +${7 * count}장!`, 'attack');
             } else if (value === 'K') {
-                singlePlayerState.skipTurns += 2 * count;
+                const activeCount = players.filter(p => !p.isBankrupt && p.rank === null).length;
+                let kSkips = 2 * count;
+                // 2인 남았을 때: 짝수 장(2장) 내면 내 턴(홀수 스킵), 홀수 장(1장) 내면 상대 턴(짝수 스킵) 유도
+                if (activeCount <= 2 && count % 2 === 0) {
+                    kSkips -= 1;
+                }
+                singlePlayerState.skipTurns += kSkips;
                 singlePlayerState.attackStack = 0;  // 공격 초기화 추가
                 singlePlayerState.attackType = null;
-                setMessage(`👑 ${2 * count}턴 스킵!`);
+                setMessage(`👑 ${kSkips}턴 스킵!`);
             } else if (value === 'Q') {
                 // 2인 플레이(또는 남은 인원이 2명 이하)에서는 Q가 J처럼 1턴 스킵으로 작동
                 const activeCount = players.filter(p => !p.isBankrupt && p.rank === null).length;
@@ -2157,11 +2163,7 @@
                 return;
             }
 
-            // 2명 남았을 때 스킵이 있으면 무조건 1회 스킵으로 고정 (내 턴 유지)
-            // 예: K(2스킵) 내면 -> 1스킵(상대 건너뜀) -> 내 턴
-            if (activePlayers.length === 2 && singlePlayerState.skipTurns > 0) {
-                singlePlayerState.skipTurns = 1;
-            }
+            // 2명 남았을 때 스킵 강제 고정 로직 제거 (K카드별 로직으로 대체)
 
             while (singlePlayerState.skipTurns > 0) {
                 singlePlayerState.currentPlayerIndex = (singlePlayerState.currentPlayerIndex + singlePlayerState.direction + players.length) % players.length;
@@ -2378,7 +2380,13 @@
                 newAttackStack += 7 * count;
                 newAttackType = 'color-joker';
             } else if (value === 'K') {
-                newSkipTurns += 2 * count;
+                const activeCount = players.filter(p => !p.isBankrupt && p.hand.length > 0).length;
+                let kSkips = 2 * count;
+                // 2인 남았을 때 K 로직 보정
+                if (activeCount <= 2 && count % 2 === 0) {
+                    kSkips -= 1;
+                }
+                newSkipTurns += kSkips;
                 newAttackStack = 0;
                 newAttackType = null;
             } else if (value === 'Q') {
@@ -2405,10 +2413,7 @@
             const totalPlayers = players.length;
 
             // 스킵 처리
-            const activeCountOnline = players.filter(p => !p.isBankrupt && p.hand.length > 0).length;
-            if (activeCountOnline <= 2 && newSkipTurns > 0) {
-                newSkipTurns = 1; // 2인시 스킵 고정
-            }
+            // 기존 2인 클램프 제거됨
 
             for (let i = 0; i <= newSkipTurns; i++) {
                 nextPlayerIndex = (nextPlayerIndex + newDirection + totalPlayers) % totalPlayers;
