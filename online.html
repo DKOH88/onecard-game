@@ -778,7 +778,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.1.5</div>
+        <div class="version-badge">v2.1.6</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -2157,6 +2157,12 @@
                 return;
             }
 
+            // 2명 남았을 때 스킵이 있으면 무조건 1회 스킵으로 고정 (내 턴 유지)
+            // 예: K(2스킵) 내면 -> 1스킵(상대 건너뜀) -> 내 턴
+            if (activePlayers.length === 2 && singlePlayerState.skipTurns > 0) {
+                singlePlayerState.skipTurns = 1;
+            }
+
             while (singlePlayerState.skipTurns > 0) {
                 singlePlayerState.currentPlayerIndex = (singlePlayerState.currentPlayerIndex + singlePlayerState.direction + players.length) % players.length;
                 while (players[singlePlayerState.currentPlayerIndex].isBankrupt || players[singlePlayerState.currentPlayerIndex].rank !== null) {
@@ -2399,8 +2405,19 @@
             const totalPlayers = players.length;
 
             // 스킵 처리
+            const activeCountOnline = players.filter(p => !p.isBankrupt && p.hand.length > 0).length;
+            if (activeCountOnline <= 2 && newSkipTurns > 0) {
+                newSkipTurns = 1; // 2인시 스킵 고정
+            }
+
             for (let i = 0; i <= newSkipTurns; i++) {
                 nextPlayerIndex = (nextPlayerIndex + newDirection + totalPlayers) % totalPlayers;
+                // 파산하거나 승리한 플레이어 건너뛰기
+                let safety = 0;
+                while ((players[nextPlayerIndex].isBankrupt || players[nextPlayerIndex].hand.length === 0) && safety < totalPlayers) {
+                    nextPlayerIndex = (nextPlayerIndex + newDirection + totalPlayers) % totalPlayers;
+                    safety++;
+                }
             }
             newSkipTurns = 0;
 
