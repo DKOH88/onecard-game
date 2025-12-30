@@ -778,7 +778,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.1.7</div>
+        <div class="version-badge">v2.1.8</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -1446,7 +1446,7 @@
             if (!gameState) return;
 
             document.getElementById('direction').textContent = gameState.direction === 1 ? '⟳ 시계' : '⟲ 반시계';
-            document.getElementById('deck-count').textContent = `덱: ${gameState.deck.length}`;
+            document.getElementById('deck-count').textContent = `남은 카드 수: ${gameState.deck.length}`;
 
             // 슬롯 초기화
             ['top', 'left', 'right', 'bottom', 'top-left', 'top-right'].forEach(slot => {
@@ -1793,7 +1793,7 @@
             if (!isSinglePlayer) return render();
 
             document.getElementById('direction').textContent = singlePlayerState.direction === 1 ? '⟳ 시계' : '⟲ 반시계';
-            document.getElementById('deck-count').textContent = `덱: ${singlePlayerState.deck.length}`;
+            document.getElementById('deck-count').textContent = `남은 카드 수: ${singlePlayerState.deck.length}`;
 
             // 슬롯 초기화
             ['top', 'left', 'right', 'bottom', 'top-left', 'top-right'].forEach(slot => {
