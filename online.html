@@ -836,7 +836,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.6.6</div>
+        <div class="version-badge">v2.6.7</div>
         <div id="ai-version-display" style="
             text-align: center; 
             font-size: 0.85rem; 
@@ -1375,10 +1375,15 @@
 
         // 학습된 가중치를 JSON 파일로 다운로드
         function downloadAIWeights() {
+            // 이전 학습량 + 현재 세션 학습량
+            const previousGames = (window.aiVersionInfo && window.aiVersionInfo.gamesLearned) || 0;
+            const currentSessionGames = trainingStats.gamesPlayed || 0;
+            const totalGames = previousGames + currentSessionGames;
+
             const data = {
                 ...aiWeights,
                 lastUpdated: new Date().toISOString(),
-                gamesLearned: trainingStats.gamesPlayed || 0
+                gamesLearned: totalGames
             };
             const blob = new Blob([JSON.stringify(data, null, 4)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
@@ -1477,8 +1482,10 @@
 
             if (!progress) return;
 
-            // 학습된 게임 수 업데이트
-            progress.textContent = trainingStats.gamesPlayed;
+            // 학습된 게임 수 업데이트 (누적)
+            const previousGames = (window.aiVersionInfo && window.aiVersionInfo.gamesLearned) || 0;
+            const currentSessionGames = trainingStats.gamesPlayed || 0;
+            progress.textContent = (previousGames + currentSessionGames).toLocaleString();
 
             // AI 승률 업데이트
             let aiHtml = '';
