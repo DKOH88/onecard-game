@@ -836,7 +836,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.6.3</div>
+        <div class="version-badge">v2.6.4</div>
         <div id="ai-version-display" style="
             text-align: center; 
             font-size: 0.85rem; 
@@ -3186,7 +3186,105 @@
             }
         }
 
+        // === AI 싱글 플레이어 턴 ===
+        function aiTurnSingle() {
+            const player = players[singlePlayerState.currentPlayerIndex];
+            if (!player || player.isHuman || player.isBankrupt || player.rank !== null) {
+                nextTurnSingle();
+                return;
+            }
+
+            // 플레이 가능한 카드 찾기
+            let playable = [];
+            for (let i = 0; i < player.hand.length; i++) {
+                if (canPlayCardSingle(player.hand[i])) {
+                    playable.push({ index: i, card: player.hand[i] });
+                }
+            }
+
+            // 플레이 가능한 카드가 없으면 드로우
+            if (playable.length === 0) {
+                drawCardsForPlayerSingle(player);
+                renderSingle();
+                setTimeout(nextTurnSingle, 500);
+                return;
+            }
+
+            // 난이도별 AI 선택
+            let chosenCards = [];
+
+            if (aiDifficulty === 'beginner') {
+                // 초급: 랜덤 선택
+                chosenCards = [playable[Math.floor(Math.random() * playable.length)]];
+            } else if (aiDifficulty === 'intermediate') {
+                chosenCards = selectSmartAI(player, playable);
+            } else if (aiDifficulty === 'advanced') {
+                chosenCards = selectCountingAI(player, playable);
+            } else if (aiDifficulty === 'expert') {
+                chosenCards = selectExpertAI(player, playable);
+            } else {
+                // 기본값: 스마트 AI
+                chosenCards = selectSmartAI(player, playable);
+            }
+
+            // fallback
+            if (!chosenCards || chosenCards.length === 0) {
+                chosenCards = [playable[0]];
+            }
+
+            // 카드 플레이
+            const indices = chosenCards.map(pc => pc.index).sort((a, b) => b - a);
+            const cards = indices.map(i => player.hand[i]);
+            indices.forEach(i => player.hand.splice(i, 1));
+            cards.forEach(card => singlePlayerState.discardPile.push(card));
+            playCardPlaySound();
+
+            const lastCard = cards[cards.length - 1];
+            if (lastCard.suit !== 'black-joker' && lastCard.suit !== 'color-joker') {
+                singlePlayerState.currentSuit = lastCard.suit;
+            }
+
+            // 7카드로 무늬 변경 (AI가 가장 많이 가진 무늬로)
+            if (lastCard.value === '7') {
+                const suits = ['spade', 'heart', 'diamond', 'club'];
+                let bestSuit = suits[0], maxCount = 0;
+                suits.forEach(s => {
+                    const cnt = player.hand.filter(c => c.suit === s).length;
+                    if (cnt > maxCount) { maxCount = cnt; bestSuit = s; }
+                });
+                singlePlayerState.currentSuit = bestSuit;
+
+                // 7카드 무늬 변경 알림
+                const suitColors = { 'spade': '#000', 'heart': '#e11d48', 'diamond': '#e11d48', 'club': '#000' };
+                const suitNameText = { 'spade': '♠ 스페이드', 'heart': '♥ 하트', 'diamond': '♦ 다이아몬드', 'club': '♣ 클로버' };
+                const coloredSuit = `<span style="color:${suitColors[bestSuit]};background:white;padding:2px 6px;border-radius:4px;">${suitNameText[bestSuit]}</span>`;
+                showNotification(`${player.name}님이 문양을 ${coloredSuit} (으)로 바꿨습니다!`);
+                playSuitChangeSound();
+            }
+
+            handleSpecialCardsSingle(cards);
+
+            // 승리 체크
+            if (player.hand.length === 0) {
+                const currentRank = players.filter(p => p.rank !== null).length + 1;
+                player.rank = currentRank;
+                setMessage(`🎉 ${player.name}님이 ${currentRank}등으로 탈출!`);
+                renderSingle();
+
+                if (isGameOverSingle()) {
+                    setTimeout(endGameSingle, 1500);
+                } else {
+                    setTimeout(nextTurnSingle, 1500);
+                }
+                return;
+            }
+
+            renderSingle();
+            setTimeout(nextTurnSingle, 800);
+        }
+
         // === 난이도별 AI 선택 함수 ===
+
 
         // 🟡 중급: 스마트 AI (조커/A 보존, 일반 카드 우선)
         function selectSmartAI(player, playable) {
