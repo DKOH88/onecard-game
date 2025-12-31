@@ -836,7 +836,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.6.7</div>
+        <div class="version-badge">v2.6.8</div>
         <div id="ai-version-display" style="
             text-align: center; 
             font-size: 0.85rem; 
@@ -1380,9 +1380,14 @@
             const currentSessionGames = trainingStats.gamesPlayed || 0;
             const totalGames = previousGames + currentSessionGames;
 
+            // KST 시간 구하기 (UTC+9)
+            const now = new Date();
+            const kstDate = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+            const lastUpdatedISO = kstDate.toISOString().replace('Z', '+09:00');
+
             const data = {
                 ...aiWeights,
-                lastUpdated: new Date().toISOString(),
+                lastUpdated: lastUpdatedISO,
                 gamesLearned: totalGames
             };
             const blob = new Blob([JSON.stringify(data, null, 4)], { type: 'application/json' });
