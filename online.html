@@ -836,7 +836,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.8.5</div>
+        <div class="version-badge">v2.8.6</div>
         <div id="ai-version-display" style="
             text-align: center; 
             font-size: 0.85rem; 
@@ -1983,11 +1983,16 @@
             trainingStats.gamesPlayed++;
 
             // 1등 찾기
+            // 1등 찾기
             const winner = players.find(p => p.rank === 1);
             if (battleConfig && battleConfig.active) {
                 if (winner) {
                     if (winner.id === 'ai-p1') battleConfig.wins.p1++;
                     else if (winner.id === 'ai-p2') battleConfig.wins.p2++;
+                } else {
+                    // 승자가 없으면(턴 초과 등) 무승부
+                    if (battleConfig.wins.draw === undefined) battleConfig.wins.draw = 0;
+                    battleConfig.wins.draw++;
                 }
             } else if (winner) {
                 trainingStats.aiWins[winner.name] = (trainingStats.aiWins[winner.name] || 0) + 1;
