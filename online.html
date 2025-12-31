@@ -836,7 +836,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.6.8</div>
+        <div class="version-badge">v2.6.9</div>
         <div id="ai-version-display" style="
             text-align: center; 
             font-size: 0.85rem; 
@@ -1210,8 +1210,8 @@
             }
         }
 
-        // 싱글 플레이어 상태
         let isSinglePlayer = false;
+        let aiTurnWatchdog = null; // AI 턴 감시용 타이머
         let singlePlayerState = {
             deck: [],
             discardPile: [],
@@ -3144,6 +3144,12 @@
         }
 
         function nextTurnSingle() {
+            // 왓치독 초기화 (턴 시작 시 무조건 리셋)
+            if (aiTurnWatchdog) {
+                clearTimeout(aiTurnWatchdog);
+                aiTurnWatchdog = null;
+            }
+
             const activePlayers = players.filter(p => !p.isBankrupt && p.rank === null);
 
             if (activePlayers.length <= 1) {
@@ -3193,7 +3199,15 @@
                     setMessage('당신의 턴');
                 }
             } else {
+                setMessage(''); // AI 턴이면 메시지 클리어
                 const delay = 1000 + Math.random() * 2000;
+
+                // 왓치독 설정 (8초 안에 다음 턴 안 오면 강제 진행)
+                aiTurnWatchdog = setTimeout(() => {
+                    console.error('🚨 AI Turn Watchdog Triggered! Forcing next turn...');
+                    nextTurnSingle();
+                }, 8000);
+
                 setTimeout(aiTurnSingle, delay);
             }
         }
