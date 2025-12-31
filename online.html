@@ -836,7 +836,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.5.7</div>
+        <div class="version-badge">v2.5.8</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -1506,12 +1506,17 @@
             singlePlayerState.attackType = null;
             singlePlayerState.currentSuit = firstCard.suit;
             singlePlayerState.skipTurns = 0;
+            trainingTurnCount = 0; // 턴 카운터 리셋
 
             // 현재 게임 뷰 업데이트
             updateCurrentGameView();
 
-            // 첫 AI 턴 시작
-            setTimeout(aiTrainingTurn, trainingConfig.speed);
+            // 첫 AI 턴 시작 (초고속 모드면 즉시)
+            if (trainingConfig.speed <= 100) {
+                aiTrainingTurn();
+            } else {
+                setTimeout(aiTrainingTurn, trainingConfig.speed);
+            }
         }
 
         function updateCurrentGameView() {
@@ -1539,8 +1544,20 @@
             view.innerHTML = html;
         }
 
+        let trainingTurnCount = 0;
+        const MAX_TURNS_PER_GAME = 500; // 무한 루프 방지
+
         function aiTrainingTurn() {
             if (!isAITrainingMode) return;
+
+            trainingTurnCount++;
+
+            // 무한 루프 방지: 500턴 넘으면 강제 종료
+            if (trainingTurnCount > MAX_TURNS_PER_GAME) {
+                console.log('Training game force ended - too many turns');
+                endTrainingGame();
+                return;
+            }
 
             // 스킵 턴 처리
             while (singlePlayerState.skipTurns > 0) {
@@ -1693,8 +1710,15 @@
             singlePlayerState.currentPlayerIndex =
                 (singlePlayerState.currentPlayerIndex + singlePlayerState.direction + players.length) % players.length;
 
-            updateCurrentGameView();
-            setTimeout(aiTrainingTurn, trainingConfig.speed);
+            // 빠른 속도에서는 DOM 업데이트 최소화 (10턴마다 1회)
+            if (trainingConfig.speed <= 100) {
+                if (Math.random() < 0.1) updateCurrentGameView();
+                // 초고속 모드: setTimeout 없이 즉시 실행
+                aiTrainingTurn();
+            } else {
+                updateCurrentGameView();
+                setTimeout(aiTrainingTurn, trainingConfig.speed);
+            }
         }
 
         function endTrainingGame() {
