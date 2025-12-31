@@ -1073,6 +1073,11 @@
         let selectedCards = [];
         let lastTurnIndex = -1; // 턴 변경 감지용
 
+        // AI 배틀 모드 설정
+        let battleConfig = null;
+        let battleP1Diff = 'expert'; // 기본값
+        let battleP2Diff = 'beginner'; // 기본값
+
         // 알림음 생성
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -1347,9 +1352,7 @@
         }
 
         // === AI 배틀 모드 ===
-        let battleConfig = null; // AI 배틀 설정
-        let battleP1Diff = 'expert';
-        let battleP2Diff = 'beginner';
+        // === AI 배틀 모드 ===
 
         function selectBattleAI(player, diff) {
             if (player === 'p1') {
