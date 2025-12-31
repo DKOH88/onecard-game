@@ -836,7 +836,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.7.0</div>
+        <div class="version-badge">v2.7.1</div>
         <div id="ai-version-display" style="
             text-align: center; 
             font-size: 0.85rem; 
@@ -2963,7 +2963,15 @@
                 return;
             }
 
-            nextTurnSingle();
+            // 특수 카드(공격/방어/스킵) 사용 시 메시지 확인을 위해 딜레이 추가
+            const isSpecial = ['A', '2', 'K', 'Q', 'J'].includes(cards[0].value) ||
+                cards[0].suit.includes('joker');
+
+            if (isSpecial) {
+                setTimeout(nextTurnSingle, 2000);
+            } else {
+                nextTurnSingle();
+            }
         }
 
         function handleSpecialCardsSingle(cards) {
@@ -2975,6 +2983,7 @@
             const hasColorJoker = cards.some(c => c.suit === 'color-joker');
 
             if (value === '2') {
+                console.log(`💥 Special Card '2' detected! Stack += ${2 * count}`);
                 singlePlayerState.attackStack += 2 * count;
                 singlePlayerState.attackType = '2';
                 setMessage(`⚔️ +${2 * count}장! (누적: ${singlePlayerState.attackStack}장)`, 'attack');
@@ -3194,12 +3203,14 @@
                 playTurnSound();
 
                 if (singlePlayerState.attackStack > 0) {
+                    console.log(`⚔️ Human Turn: Attack Stack = ${singlePlayerState.attackStack}`);
                     setMessage(`⚔️ ${singlePlayerState.attackStack}장 공격! 방어 또는 뽑기`, 'attack');
                 } else {
+                    console.log('🛡️ Human Turn: No Attack');
                     setMessage('당신의 턴');
                 }
             } else {
-                setMessage(''); // AI 턴이면 메시지 클리어
+                setMessage(`🤖 ${cp.name} 생각 중...`); // AI 턴 메시지 표시
                 const delay = 1000 + Math.random() * 2000;
 
                 // 왓치독 설정 (5초 안에 다음 턴 안 오면 강제 진행)
@@ -3284,6 +3295,7 @@
 
                 // 7카드로 무늬 변경 (AI가 가장 많이 가진 무늬로)
                 if (lastCard.value === '7') {
+                    console.log('🐞 AI played 7. Changing suit...');
                     const suits = ['spade', 'heart', 'diamond', 'club'];
                     let bestSuit = suits[0], maxCount = 0;
                     suits.forEach(s => {
@@ -3291,6 +3303,7 @@
                         if (cnt > maxCount) { maxCount = cnt; bestSuit = s; }
                     });
                     singlePlayerState.currentSuit = bestSuit;
+                    console.log(`🐞 Best suit selected: ${bestSuit}`);
 
                     // 7카드 무늬 변경 알림
                     const suitColors = { 'spade': '#000', 'heart': '#e11d48', 'diamond': '#e11d48', 'club': '#000' };
@@ -3298,6 +3311,8 @@
                     const coloredSuit = `<span style="color:${suitColors[bestSuit]};background:white;padding:2px 6px;border-radius:4px;">${suitNameText[bestSuit]}</span>`;
                     showNotification(`${player.name}님이 문양을 ${coloredSuit} (으)로 바꿨습니다!`);
                     playSuitChangeSound();
+                } else {
+                    console.log(`🐞 AI played card value: ${lastCard.value} (Not 7)`);
                 }
 
                 handleSpecialCardsSingle(cards);
