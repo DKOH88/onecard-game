@@ -836,7 +836,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.9.3</div>
+        <div class="version-badge">v2.9.5</div>
         <div id="ai-version-display" style="
             text-align: center; 
             font-size: 0.85rem; 
@@ -1521,7 +1521,12 @@
 
             // 학습 모드 재사용 (속도 빠름)
             isAITrainingMode = true;
-            trainingConfig.speed = 50; // 배틀 모드는 기본적으로 빠르게 (50ms)
+            // 5판 이상이면 초고속 모드(0ms), 아니면 관전 모드(50ms)
+            if (battleConfig.totalGames >= 5) {
+                trainingConfig.speed = 0;
+            } else {
+                trainingConfig.speed = 50;
+            }
             isSinglePlayer = true;
 
             // 모니터 UI 재활용
@@ -1998,12 +2003,23 @@
             singlePlayerState.currentPlayerIndex =
                 (singlePlayerState.currentPlayerIndex + singlePlayerState.direction + players.length) % players.length;
 
-            // 빠른 속도에서는 DOM 업데이트 최소화 (10턴마다 1회)
-            if (trainingConfig.speed <= 100) {
+            // 빠른 속도에서는 DOM 업데이트 최소화
+            if (trainingConfig.speed === 0) {
+                // Turbo Mode: 0.1% 확률로만 뷰 업데이트 (거의 안 함)
+                if (Math.random() < 0.001) updateCurrentGameView();
+
+                // Stack Overflow 방지: 비동기 루프 (0ms)
+                if (trainingTurnCount % 100 === 0) {
+                    setTimeout(aiTrainingTurn, 0);
+                } else {
+                    aiTrainingTurn();
+                }
+            } else if (trainingConfig.speed <= 100) {
+                // Fast Mode: 10% 확률로 뷰 업데이트
                 if (Math.random() < 0.1) updateCurrentGameView();
-                // 초고속 모드: setTimeout 없이 즉시 실행
-                aiTrainingTurn();
+                setTimeout(aiTrainingTurn, 0);
             } else {
+                // Normal Mode
                 updateCurrentGameView();
                 setTimeout(aiTrainingTurn, trainingConfig.speed);
             }
@@ -3221,14 +3237,17 @@
                 singlePlayerState.attackType = '2';
                 setMessage(`⚔️ +${2 * count}장! (누적: ${singlePlayerState.attackStack}장)`, 'attack');
             } else if (value === 'A') {
+                console.log(`💥 Special Card 'A' detected! Stack += ${3 * count}`);
                 singlePlayerState.attackStack += 3 * count;
                 singlePlayerState.attackType = 'A';
                 setMessage(`⚔️ +${3 * count}장! (누적: ${singlePlayerState.attackStack}장)`, 'attack');
             } else if (hasBlackJoker) {
+                console.log(`💥 Special Card 'Black Joker' detected! Stack += ${5 * count}`);
                 singlePlayerState.attackStack += 5 * count;
                 singlePlayerState.attackType = 'black-joker';
                 setMessage(`🖤 +${5 * count}장!`, 'attack');
             } else if (hasColorJoker) {
+                console.log(`💥 Special Card 'Color Joker' detected! Stack += ${7 * count}`);
                 singlePlayerState.attackStack += 7 * count;
                 singlePlayerState.attackType = 'color-joker';
                 setMessage(`🌈 +${7 * count}장!`, 'attack');
