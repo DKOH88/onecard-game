@@ -836,7 +836,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.9.6</div>
+        <div class="version-badge">v2.9.7</div>
         <div id="ai-version-display" style="
             text-align: center; 
             font-size: 0.85rem; 
@@ -3602,11 +3602,23 @@
 
         // 🟢 고급: 카운팅 AI (상대 패 수 파악 후 공격 우선)
         function selectCountingAI(player, playable) {
-            const humanPlayer = players.find(p => p.isHuman);
-            const humanHandCount = humanPlayer ? humanPlayer.hand.length : 10;
+            // 가장 위협적인 상대(카드가 가장 적은 사람) 찾기
+            const opponents = players.filter(p => p.id !== player.id && !p.isBankrupt && p.rank === null);
+            let targetPlayer = null;
+            let targetHandCount = 99;
 
-            // 인간 플레이어가 3장 이하면 공격 모드
-            if (humanHandCount <= 3) {
+            if (opponents.length > 0) {
+                // 핸드 수가 가장 적은 상대 찾기
+                opponents.forEach(p => {
+                    if (p.hand.length < targetHandCount) {
+                        targetHandCount = p.hand.length;
+                        targetPlayer = p;
+                    }
+                });
+            }
+
+            // 상대가 3장 이하면 공격 모드
+            if (targetHandCount <= 3) {
                 // 공격 카드 우선 (Joker > A > 2 > K > Q > J)
                 const attackCards = playable.filter(pc =>
                     ['black-joker', 'color-joker', 'A', '2', 'K', 'Q', 'J'].includes(pc.card.value) ||
@@ -3707,12 +3719,18 @@
                 pc.card.value !== 'A' && pc.card.value !== '2' && pc.card.value !== '7'
             );
 
+
             const isUnderAttack = singlePlayerState.attackStack > 0;
             const myCardCount = player.hand.length;
             const isEmergency = myCardCount <= 3;
             const canWinNow = myCardCount === 1;
-            const humanPlayer = players.find(p => p.isHuman);
-            const humanCardCount = humanPlayer ? humanPlayer.hand.length : 99;
+
+            // 가장 위협적인 상대 찾기 (Generalization)
+            const opponents = players.filter(p => p.id !== player.id && !p.isBankrupt && p.rank === null);
+            let minOpponentHandCount = 99;
+            if (opponents.length > 0) {
+                minOpponentHandCount = Math.min(...opponents.map(p => p.hand.length));
+            }
 
             let chosenCards = [];
 
@@ -3722,7 +3740,7 @@
                 else if (jokers.length > 0) chosenCards = [jokers[0]];
             } else if (canWinNow) {
                 chosenCards = [playable[0]];
-            } else if (humanCardCount <= 2 && twos.length > 0) {
+            } else if (minOpponentHandCount <= 2 && twos.length > 0) {
                 chosenCards = twos;
             } else if (normals.length > 0) {
                 // 같은 숫자 그룹 중 가장 많은 것
@@ -3771,12 +3789,18 @@
                 pc.card.value !== 'A' && pc.card.value !== '2' && pc.card.value !== '7'
             );
 
+
             const isUnderAttack = singlePlayerState.attackStack > 0;
             const myCardCount = player.hand.length;
             const isEmergency = myCardCount <= 3;
             const canWinNow = myCardCount === 1;
-            const humanPlayer = players.find(p => p.isHuman);
-            const humanCardCount = humanPlayer ? humanPlayer.hand.length : 99;
+
+            // 가장 위협적인 상대 재계산
+            const opponents = players.filter(p => p.id !== player.id && !p.isBankrupt && p.rank === null);
+            let minOpponentHandCount = 99;
+            if (opponents.length > 0) {
+                minOpponentHandCount = Math.min(...opponents.map(p => p.hand.length));
+            }
 
             // 카운팅 분석
             const remaining2s = cardCounts.remainingValues['2'] || 0;
@@ -3792,9 +3816,9 @@
                 else if (jokers.length > 0) chosenCards = [jokers[0]];
             } else if (canWinNow) {
                 chosenCards = [playable[0]];
-            } else if (humanCardCount <= 2 && (twos.length > 0 || jokers.length > 0)) {
+            } else if (minOpponentHandCount <= 2 && (twos.length > 0 || jokers.length > 0)) {
                 // 카운팅: 방어 카드 많으면 공격 자제
-                if (!playerLikelyHasDefense || humanCardCount === 1) {
+                if (!playerLikelyHasDefense || minOpponentHandCount === 1) {
                     if (twos.length > 0) chosenCards = twos;
                     else if (jokers.length > 0) chosenCards = [jokers[0]];
                 }
