@@ -836,7 +836,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.6.5</div>
+        <div class="version-badge">v2.6.6</div>
         <div id="ai-version-display" style="
             text-align: center; 
             font-size: 0.85rem; 
@@ -3296,6 +3296,101 @@
 
         // === 난이도별 AI 선택 함수 ===
 
+        // 🟢 고급: 카운팅 AI (상대 패 수 파악 후 공격 우선)
+        function selectCountingAI(player, playable) {
+            const humanPlayer = players.find(p => p.isHuman);
+            const humanHandCount = humanPlayer ? humanPlayer.hand.length : 10;
+
+            // 인간 플레이어가 3장 이하면 공격 모드
+            if (humanHandCount <= 3) {
+                // 공격 카드 우선 (Joker > A > 2 > K > Q > J)
+                const attackCards = playable.filter(pc =>
+                    ['black-joker', 'color-joker', 'A', '2', 'K', 'Q', 'J'].includes(pc.card.value) ||
+                    pc.card.suit.includes('joker')
+                );
+
+                if (attackCards.length > 0) {
+                    // 공격력 높은 순 정렬 (Joker=50, A=40, 2=30, K=20...)
+                    attackCards.sort((a, b) => {
+                        const getVal = (c) => {
+                            if (c.suit.includes('joker')) return 50;
+                            if (c.value === 'A') return 40;
+                            if (c.value === '2') return 30;
+                            if (c.value === 'K') return 20;
+                            if (c.value === 'Q') return 15;
+                            if (c.value === 'J') return 10;
+                            return 0;
+                        };
+                        return getVal(b.card) - getVal(a.card);
+                    });
+                    return [attackCards[0]];
+                }
+            }
+
+            // 평소에는 스마트 AI 로직 따름
+            return selectSmartAI(player, playable);
+        }
+
+        // 🟣 최고급: 전문가 AI (가중치 기반 최적화)
+        function selectExpertAI(player, playable) {
+            // 학습된 가중치 사용
+            const w = aiWeights || {
+                jokerSaveWeight: 1.0,
+                earlyAttackWeight: 1.0,
+                normalFirstWeight: 1.0,
+                counterAttackWeight: 1.0
+            };
+
+            const jokers = playable.filter(pc => pc.card.suit.includes('joker'));
+            const attacks = playable.filter(pc => ['A', '2'].includes(pc.card.value));
+            const specials = playable.filter(pc => ['J', 'Q', 'K'].includes(pc.card.value));
+            const normals = playable.filter(pc => !pc.card.suit.includes('joker') && !['A', '2', 'J', 'Q', 'K', '7'].includes(pc.card.value));
+
+            const isUnderAttack = singlePlayerState.attackStack > 0;
+            const myCount = player.hand.length;
+
+            // 1. 방어 (필수)
+            if (isUnderAttack) {
+                // 방어 카드는 무조건 내야 함 (이미 playable에 걸러짐)
+                return [playable[0]];
+            }
+
+            // 2. 조커 아끼기 (가중치 적용)
+            if (myCount > 5 && jokers.length > 0 && Math.random() < w.jokerSaveWeight) {
+                const others = playable.filter(pc => !pc.card.suit.includes('joker'));
+                if (others.length > 0) return selectExpertAI(player, others);
+            }
+
+            // 3. 조기 공격 (가중치 적용)
+            if (attacks.length > 0 && Math.random() < w.earlyAttackWeight) {
+                return [attacks[0]];
+            }
+
+            // 4. 일반 카드 털기 (가중치 적용)
+            if (normals.length > 0 && Math.random() < w.normalFirstWeight) {
+                const groups = {};
+                normals.forEach(pc => {
+                    const v = pc.card.value;
+                    if (!groups[v]) groups[v] = [];
+                    groups[v].push(pc);
+                });
+                let bestGroup = normals[0];
+                let maxLen = 0;
+                for (const v in groups) {
+                    if (groups[v].length > maxLen) {
+                        maxLen = groups[v].length;
+                        bestGroup = [groups[v][0]]; // 주의: groups[v]는 배열이므로 하나만 선택 or 추후 멀티 플레이 지원
+                        // 현재 로직상 chosenCards는 배열이어야 함. 
+                        // selectSmartAI 로직 참조: chosenCards = same; (배열 전체)
+                        bestGroup = groups[v];
+                    }
+                }
+                return bestGroup;
+            }
+
+            // 기본: 스마트 AI
+            return selectSmartAI(player, playable);
+        }
 
         // 🟡 중급: 스마트 AI (조커/A 보존, 일반 카드 우선)
         function selectSmartAI(player, playable) {
