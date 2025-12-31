@@ -2606,6 +2606,11 @@
 
             } catch (e) {
                 console.error('🚨 AI Turn Error:', e);
+                const player = players[singlePlayerState.currentPlayerIndex];
+                if (player && !player.isHuman) {
+                    drawCardsForPlayerSingle(player);
+                    renderSingle();
+                }
                 setTimeout(nextTurnSingle, 1000);
             }
         }
@@ -2841,6 +2846,9 @@
                 nextTurnSingle();
             } catch (e) {
                 console.error('🚨 executeAICardPlay Error:', e);
+                if (player && !player.isHuman) {
+                    drawCardsForPlayerSingle(player);
+                }
                 renderSingle();
                 setTimeout(nextTurnSingle, 1000);
             }
