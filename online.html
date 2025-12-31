@@ -836,7 +836,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.6.0</div>
+        <div class="version-badge">v2.6.1</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -1305,18 +1305,62 @@
         }
 
         function loadAIWeights() {
-            const saved = localStorage.getItem('onecard_ai_weights');
-            if (saved) {
-                try {
-                    aiWeights = JSON.parse(saved);
-                    console.log('AI 가중치 로드됨:', aiWeights);
-                } catch (e) { }
-            }
+            // 1. 먼저 서버의 기본 가중치 로드 시도
+            fetch('ai_weights.json')
+                .then(res => res.json())
+                .then(serverWeights => {
+                    console.log('서버 AI 가중치 로드됨:', serverWeights);
+                    // 서버 가중치를 기본값으로 사용
+                    aiWeights = {
+                        jokerSaveWeight: serverWeights.jokerSaveWeight || 1.0,
+                        earlyAttackWeight: serverWeights.earlyAttackWeight || 1.0,
+                        normalFirstWeight: serverWeights.normalFirstWeight || 1.0,
+                        counterAttackWeight: serverWeights.counterAttackWeight || 1.0
+                    };
+
+                    // 2. localStorage에 더 최신 데이터가 있으면 덮어쓰기
+                    const localSaved = localStorage.getItem('onecard_ai_weights');
+                    if (localSaved) {
+                        try {
+                            const localWeights = JSON.parse(localSaved);
+                            // localStorage가 있으면 우선 사용
+                            aiWeights = localWeights;
+                            console.log('로컬 AI 가중치 적용:', localWeights);
+                        } catch (e) { }
+                    }
+                })
+                .catch(err => {
+                    console.log('서버 가중치 로드 실패, localStorage 사용');
+                    const saved = localStorage.getItem('onecard_ai_weights');
+                    if (saved) {
+                        try {
+                            aiWeights = JSON.parse(saved);
+                        } catch (e) { }
+                    }
+                });
         }
 
         function saveAIWeights() {
             localStorage.setItem('onecard_ai_weights', JSON.stringify(aiWeights));
         }
+
+        // 학습된 가중치를 JSON 파일로 다운로드
+        function downloadAIWeights() {
+            const data = {
+                ...aiWeights,
+                lastUpdated: new Date().toISOString(),
+                gamesLearned: trainingStats.gamesPlayed || 0
+            };
+            const blob = new Blob([JSON.stringify(data, null, 4)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'ai_weights.json';
+            a.click();
+            URL.revokeObjectURL(url);
+            console.log('AI 가중치 다운로드됨:', data);
+        }
+
 
         function startAITraining() {
             trainingConfig.aiCount = parseInt(document.getElementById('training-ai-count').value);
@@ -1779,7 +1823,10 @@
                     <div style="text-align:center; margin-top:20px;">
                         <h2 style="color:#4ade80;">✅ 학습 완료!</h2>
                         <p>총 ${trainingStats.gamesPlayed}게임 학습 완료</p>
-                        <button class="btn btn-primary" onclick="closeTrainingMonitor()" style="margin-top:15px;">
+                        <button class="btn" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#000;margin-top:10px;" onclick="downloadAIWeights()">
+                            📥 가중치 다운로드 (GitHub 업로드용)
+                        </button>
+                        <button class="btn btn-primary" onclick="closeTrainingMonitor()" style="margin-top:10px;">
                             🏠 로비로 돌아가기
                         </button>
                     </div>
@@ -3978,6 +4025,9 @@
             if (saved) {
                 document.getElementById('nickname-input').value = saved;
             }
+
+            // AI 가중치 로드 (서버 + localStorage)
+            loadAIWeights();
         })();
 
         // 닉네임 입력 시 저장
