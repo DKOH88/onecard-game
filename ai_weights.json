@@ -1,8 +1,8 @@
 {
-    "jokerSaveWeight": 0.7021739130434783,
-    "earlyAttackWeight": 0.7012195121951219,
-    "normalFirstWeight": 0.6636212624584718,
-    "counterAttackWeight": 0.6423357664233577,
-    "lastUpdated": "2025-12-31T04:02:28.889Z",
-    "gamesLearned": 1141
+    "jokerSaveWeight": 0.7225274725274725,
+    "earlyAttackWeight": 0.8387096774193548,
+    "normalFirstWeight": 0.6849462365591398,
+    "counterAttackWeight": 0.7142857142857143,
+    "lastUpdated": "2025-12-31T04:17:15.919Z",
+    "gamesLearned": 1133
 }
