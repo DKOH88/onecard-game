@@ -836,7 +836,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.8.2</div>
+        <div class="version-badge">v2.8.4</div>
         <div id="ai-version-display" style="
             text-align: center; 
             font-size: 0.85rem; 
@@ -856,7 +856,7 @@
 
             <p style="text-align:center; margin: 15px 0 5px; font-weight:bold; color:#f472b6;">⚔️ AI 배틀 아레나 (New!)</p>
             <button class="btn" style="background:linear-gradient(135deg,#f472b6,#db2777);color:#fff;"
-                onclick="document.getElementById('ai-battle-form').classList.remove('hidden')">🥊 배틀 시뮬레이션</button>
+                onclick="showBattleForm()">🥊 배틀 시뮬레이션</button>
 
 
             <p style="text-align:center; margin: 15px 0 5px; font-weight:bold; color:#4ade80;">온라인 멀티플레이</p>
@@ -919,8 +919,7 @@
             <button class="btn btn-primary" style="background-color:#db2777;width:100%;" onclick="startAIBattle()">
                 ⚔️ 배틀 시작
             </button>
-            <button class="btn btn-secondary"
-                onclick="document.getElementById('ai-battle-form').classList.add('hidden')">취소</button>
+            <button class="btn btn-secondary" onclick="hideBattleForm()">취소</button>
         </div>
 
         <div id="single-player-form" class="hidden">
@@ -1352,7 +1351,16 @@
         }
 
         // === AI 배틀 모드 ===
-        // === AI 배틀 모드 ===
+
+        function showBattleForm() {
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById('ai-battle-form').classList.remove('hidden');
+        }
+
+        function hideBattleForm() {
+            document.getElementById('ai-battle-form').classList.add('hidden');
+            document.getElementById('main-menu').classList.remove('hidden');
+        }
 
         function selectBattleAI(player, diff) {
             if (player === 'p1') {
@@ -1507,18 +1515,32 @@
             const p1WinRate = ((battleConfig.wins.p1 / (battleConfig.currentGame || 1)) * 100).toFixed(1);
             const p2WinRate = ((battleConfig.wins.p2 / (battleConfig.currentGame || 1)) * 100).toFixed(1);
 
+            const p1 = players.find(p => p.id === 'ai-p1');
+            const p2 = players.find(p => p.id === 'ai-p2');
+            const p1Count = p1 ? p1.hand.length : 0;
+            const p2Count = p2 ? p2.hand.length : 0;
+
             const html = `
                 <h3>⚔️ AI 배틀 진행 중... (${battleConfig.currentGame}/${battleConfig.totalGames})</h3>
+                <div style="font-size:0.9rem;color:#ccc;margin-bottom:10px;">
+                    현재 턴: ${trainingTurnCount} | 상태: ${singlePlayerState.currentSuit} / ${singlePlayerState.attackStack || 0}
+                </div>
                 <div style="display:flex;justify-content:space-around;margin-top:20px;">
                     <div style="text-align:center;">
                         <h4 style="color:#a78bfa;">Player 1 (${battleConfig.p1Diff})</h4>
                         <div style="font-size:2rem;font-weight:bold;">${battleConfig.wins.p1}승</div>
                         <div>승률: ${p1WinRate}%</div>
+                        <div style="margin-top:5px;background:rgba(255,255,255,0.1);padding:5px;border-radius:5px;">
+                            카드: <span style="font-weight:bold;color:${p1Count < 3 ? '#ef4444' : '#fff'}">${p1Count}장</span>
+                        </div>
                     </div>
                     <div style="text-align:center;">
                         <h4 style="color:#f472b6;">Player 2 (${battleConfig.p2Diff})</h4>
                         <div style="font-size:2rem;font-weight:bold;">${battleConfig.wins.p2}승</div>
                         <div>승률: ${p2WinRate}%</div>
+                        <div style="margin-top:5px;background:rgba(255,255,255,0.1);padding:5px;border-radius:5px;">
+                            카드: <span style="font-weight:bold;color:${p2Count < 3 ? '#ef4444' : '#fff'}">${p2Count}장</span>
+                        </div>
                     </div>
                 </div>
                 <button class="btn" style="margin-top:20px;background:#ef4444;" onclick="stopAITraining()">⏹ 배틀 중단</button>
