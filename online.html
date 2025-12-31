@@ -836,7 +836,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.8.7</div>
+        <div class="version-badge">v2.8.8</div>
         <div id="ai-version-display" style="
             text-align: center; 
             font-size: 0.85rem; 
@@ -1847,7 +1847,13 @@
 
                 // 게임 종료 체크
                 const activePlayers = players.filter(p => !p.isBankrupt && p.rank === null);
+
+                if (trainingTurnCount <= 5) {
+                    console.log(`Active Check: Total ${players.length}, Active ${activePlayers.length}. P1 Status: ${players[0]?.isBankrupt}/${players[0]?.rank}, P2 Status: ${players[1]?.isBankrupt}/${players[1]?.rank}`);
+                }
+
                 if (activePlayers.length <= 1) {
+                    console.log('Game ended: Active players <= 1');
                     endTrainingGame();
                     return;
                 }
