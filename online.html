@@ -836,7 +836,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.9.7</div>
+        <div class="version-badge">v2.9.8 (Stable)</div>
         <div id="ai-version-display" style="
             text-align: center; 
             font-size: 0.85rem; 
@@ -860,8 +860,11 @@
 
 
             <p style="text-align:center; margin: 15px 0 5px; font-weight:bold; color:#4ade80;">온라인 멀티플레이</p>
-            <button class="btn btn-primary" onclick="createRoom()">🏠 방 만들기</button>
-            <button class="btn btn-secondary" onclick="showJoinForm()">🚪 방 참가하기</button>
+            <!-- GitHub 배포용: AI 배틀/학습 모드 숨김 -->
+            <!-- 
+                <button class="btn btn-secondary" onclick="showBattleForm()">⚔️ AI 배틀 아레나</button>
+                <button class="btn btn-secondary" onclick="showAILearningOptions()">🤖 AI 학습 설정</button>
+                 -->
 
             <p style="text-align:center; margin: 20px 0 5px; font-weight:bold; color:#fbbf24;">싱글 플레이어</p>
             <button class="btn" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#000;"
@@ -919,6 +922,8 @@
             <button class="btn btn-primary" style="background-color:#db2777;width:100%;" onclick="startAIBattle()">
                 ⚔️ 배틀 시작
             </button>
+            <!-- GitHub 배포용: 배틀 아레나 버튼 숨김 -->
+            <!-- <button class="btn btn-secondary" onclick="showBattleForm()" style="width:100%; border:1px solid #78350f; color:#fcd34d;">⚔️ AI 배틀 아레나 입장</button> -->
             <button class="btn btn-secondary" onclick="hideBattleForm()">취소</button>
         </div>
 
@@ -967,7 +972,9 @@
                 <select id="training-speed" style="width:100%;padding:12px;border-radius:10px;font-size:1rem;">
                     <option value="1000">보통 (1초)</option>
                     <option value="500" selected>빠름 (0.5초)</option>
-                    <option value="100">초고속 (0.1초)</option>
+                    <option value="intermediate">중급 (Smart AI)</option>
+                    <option value="advanced">고급 (Counting AI)</option>
+                    <!-- <option value="expert">최고급 (Learning AI)</option> (PC 전용) -->
                 </select>
             </div>
             <p style="text-align:center;color:#888;font-size:0.9rem;margin:10px 0;">
