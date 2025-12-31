@@ -836,7 +836,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.7.2</div>
+        <div class="version-badge">v2.8.0</div>
         <div id="ai-version-display" style="
             text-align: center; 
             font-size: 0.85rem; 
@@ -1290,6 +1290,23 @@
             });
         }
 
+        // === AI 배틀 모드 ===
+        let battleConfig = null; // AI 배틀 설정
+        let battleP1Diff = 'expert';
+        let battleP2Diff = 'beginner';
+
+        function selectBattleAI(player, diff) {
+            if (player === 'p1') {
+                battleP1Diff = diff;
+                document.querySelectorAll('#battle-p1-group .diff-btn').forEach(b => b.classList.remove('selected'));
+                document.querySelector(`#battle-p1-group .diff-btn[data-value="${diff}"]`).classList.add('selected');
+            } else {
+                battleP2Diff = diff;
+                document.querySelectorAll('#battle-p2-group .diff-btn').forEach(b => b.classList.remove('selected'));
+                document.querySelector(`#battle-p2-group .diff-btn[data-value="${diff}"]`).classList.add('selected');
+            }
+        }
+
         function selectAIDifficulty(difficulty) {
             selectedAIDifficulty = difficulty;
             document.querySelectorAll('#ai-difficulty-buttons .btn-option').forEach(btn => {
@@ -1399,9 +1416,63 @@
             URL.revokeObjectURL(url);
             console.log('AI 가중치 다운로드됨:', data);
         }
+        function startAIBattle() {
+            const games = parseInt(document.getElementById('battle-games').value) || 10;
 
+            battleConfig = {
+                active: true,
+                p1Diff: battleP1Diff,
+                p2Diff: battleP2Diff,
+                totalGames: games,
+                currentGame: 0,
+                wins: { p1: 0, p2: 0, draw: 0 }
+            };
 
+            // 학습 모드 재사용 (속도 빠름)
+            isAITrainingMode = true;
+            isSinglePlayer = true;
+
+            // 모니터 UI 재활용
+            document.getElementById('lobby-screen').classList.add('hidden');
+            showTrainingMonitor();
+
+            // 모니터 제목 등 변경
+            updateBattleMonitor();
+
+            startNextTrainingGame();
+        }
+
+        function updateBattleMonitor() {
+            if (!battleConfig || !battleConfig.active) return;
+
+            const p1WinRate = ((battleConfig.wins.p1 / (battleConfig.currentGame || 1)) * 100).toFixed(1);
+            const p2WinRate = ((battleConfig.wins.p2 / (battleConfig.currentGame || 1)) * 100).toFixed(1);
+
+            const html = `
+                <h3>⚔️ AI 배틀 진행 중... (${battleConfig.currentGame}/${battleConfig.totalGames})</h3>
+                <div style="display:flex;justify-content:space-around;margin-top:20px;">
+                    <div style="text-align:center;">
+                        <h4 style="color:#a78bfa;">Player 1 (${battleConfig.p1Diff})</h4>
+                        <div style="font-size:2rem;font-weight:bold;">${battleConfig.wins.p1}승</div>
+                        <div>승률: ${p1WinRate}%</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <h4 style="color:#f472b6;">Player 2 (${battleConfig.p2Diff})</h4>
+                        <div style="font-size:2rem;font-weight:bold;">${battleConfig.wins.p2}승</div>
+                        <div>승률: ${p2WinRate}%</div>
+                    </div>
+                </div>
+                <button class="btn" style="margin-top:20px;background:#ef4444;" onclick="stopAITraining()">⏹ 배틀 중단</button>
+            `;
+
+            const monitor = document.getElementById('training-monitor');
+            if (monitor) monitor.innerHTML = html;
+        }
+
+        // === AI 학습(자동 플레이) 모드 ===
         function startAITraining() {
+            battleConfig = null; // 배틀 초기화
+
             trainingConfig.aiCount = parseInt(document.getElementById('training-ai-count').value);
             trainingConfig.speed = parseInt(document.getElementById('training-speed').value);
             trainingConfig.totalGames = Infinity; // 무한 학습
@@ -1772,10 +1843,21 @@
 
                 const activePlayers = players.filter(p => !p.isBankrupt && p.rank === null);
                 if (activePlayers.length <= 1) {
-                    if (activePlayers.length === 1) {
-                        activePlayers[0].rank = currentRank + 1;
+                    // 승자 판별 (혹은 마지막 1인)
+                    const winner = players.find(p => p.hand.length === 0) || players.find(p => !p.isBankrupt);
+
+                    if (winner) {
+                        if (battleConfig && battleConfig.active) {
+                            if (winner.id === 'ai-p1') battleConfig.wins.p1++;
+                            else battleConfig.wins.p2++;
+                        } else {
+                            // 일반 학습 통계
+                            trainingStats.aiWins[winner.name]++;
+                        }
                     }
-                    endTrainingGame();
+
+                    // 다음 게임 바로 시작
+                    setTimeout(startNextTrainingGame, 10);
                     return;
                 }
             }
@@ -3700,16 +3782,20 @@
             let chosenCards = [];
 
             // === 난이도별 AI 전략 ===
-            if (aiDifficulty === 'beginner') {
+            // === 난이도별 AI 전략 ===
+            // 배틀 모드 등에서는 플레이어별 난이도가 우선, 없으면 글로벌 설정
+            const currentDiff = player.difficulty || aiDifficulty;
+
+            if (currentDiff === 'beginner') {
                 // 🟢 초급: 랜덤 선택
                 chosenCards = [playable[Math.floor(Math.random() * playable.length)]];
-            } else if (aiDifficulty === 'intermediate') {
+            } else if (currentDiff === 'intermediate') {
                 // 🟡 중급: 스마트 AI (조커/A 보존)
                 chosenCards = selectSmartAI(player, playable);
-            } else if (aiDifficulty === 'advanced') {
+            } else if (currentDiff === 'advanced') {
                 // 🟠 고급: 카드 카운팅 AI
                 chosenCards = selectCountingAI(player, playable);
-            } else if (aiDifficulty === 'expert') {
+            } else if (currentDiff === 'expert') {
                 // 🔴 최고급: 가중치 학습 AI
                 chosenCards = selectExpertAI(player, playable);
             } else {
