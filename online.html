@@ -2587,175 +2587,260 @@
                     return;
                 }
 
-                // === 카드 카운팅 AI 전략 ===
-                const cardCounts = getCardCounts();
-
-                // 1. 카드 분류
-                const jokers = playable.filter(pc => pc.card.suit === 'black-joker' || pc.card.suit === 'color-joker');
-                const aces = playable.filter(pc => pc.card.value === 'A');
-                const twos = playable.filter(pc => pc.card.value === '2');
-                const sevens = playable.filter(pc => pc.card.value === '7');
-                const normals = playable.filter(pc =>
-                    pc.card.suit !== 'black-joker' &&
-                    pc.card.suit !== 'color-joker' &&
-                    pc.card.value !== 'A' &&
-                    pc.card.value !== '2' &&
-                    pc.card.value !== '7'
-                );
-
-                // 2. 상황 분석
-                const myCardCount = player.hand.length;
-                const humanPlayer = players.find(p => p.isHuman);
-                const humanCardCount = humanPlayer ? humanPlayer.hand.length : 99;
-                const isUnderAttack = singlePlayerState.attackStack > 0;
-                const isEmergency = myCardCount <= 3;
-                const canWinNow = myCardCount === 1;
-
-                // 카운팅 기반 추가 분석
-                const remaining2s = cardCounts.remainingValues['2'] || 0;
-                const remainingAs = cardCounts.remainingValues['A'] || 0;
-                const remainingJokers = cardCounts.remainingValues['JOKER'] || 0;
-                const playerLikelyHasDefense = (remaining2s + remainingAs + remainingJokers) > 2;
-
+                // === 난이도별 AI 전략 선택 ===
                 let chosenCards = [];
 
-                // 3. 전략적 카드 선택
-                if (isUnderAttack) {
-                    // 공격 받는 중 -> 방어 카드 사용 (단, 조커는 최후의 수단)
-                    if (twos.length > 0) {
-                        chosenCards = [twos[0]];
-                    } else if (aces.length > 0) {
-                        chosenCards = [aces[0]];
-                    } else if (jokers.length > 0) {
-                        chosenCards = [jokers[0]];
-                    }
-                } else if (canWinNow) {
-                    // 승리 가능! -> 아무 카드나 내기
-                    chosenCards = [playable[0]];
-                } else if (humanCardCount <= 2 && (twos.length > 0 || jokers.length > 0)) {
-                    // 플레이어가 카드 적을 때 -> 공격!
-                    // 카운팅: 방어 카드가 많이 남아있으면 공격 자제
-                    if (!playerLikelyHasDefense || humanCardCount === 1) {
-                        if (twos.length > 0) {
-                            chosenCards = twos;
-                        } else if (jokers.length > 0) {
-                            chosenCards = [jokers[0]];
-                        }
-                    }
+                if (aiDifficulty === 'beginner') {
+                    // 🟢 초급: 랜덤 선택 (가장 쉬움)
+                    chosenCards = [playable[Math.floor(Math.random() * playable.length)]];
+                } else if (aiDifficulty === 'intermediate') {
+                    // 🟡 중급: 스마트 AI (일반 카드 우선, 특수카드 보존)
+                    chosenCards = selectSmartAI(player, playable);
+                } else {
+                    // 🟠 고급: 카운팅 AI (현재 로직)
+                    chosenCards = selectCountingAI(player, playable);
                 }
 
-                // 위 조건에서 선택 안됐으면 일반 전략
-                if (chosenCards.length === 0) {
-                    if (normals.length > 0) {
-                        // 일반 카드 우선 사용
-                        const normalGroups = {};
-                        normals.forEach(pc => {
-                            const val = pc.card.value;
-                            if (!normalGroups[val]) normalGroups[val] = [];
-                            normalGroups[val].push(pc);
-                        });
+                // 최종 결과 카드 내기
+                executeAICardPlay(player, chosenCards, playable);
 
-                        let bestNormalGroup = null;
-                        for (let val in normalGroups) {
-                            if (!bestNormalGroup || normalGroups[val].length > bestNormalGroup.length) {
-                                bestNormalGroup = normalGroups[val];
-                            }
-                        }
-                        chosenCards = bestNormalGroup;
-                    } else if (sevens.length > 0 && !isEmergency) {
-                        chosenCards = [sevens[0]];
-                    } else if (twos.length > 0) {
-                        chosenCards = [twos[0]];
-                    } else if (aces.length > 0 && isEmergency) {
-                        chosenCards = [aces[0]];
-                    } else if (jokers.length > 0 && isEmergency) {
-                        chosenCards = [jokers[0]];
-                    } else {
-                        chosenCards = [playable[0]];
-                    }
-                }
-
-                // 같은 숫자 카드 묶기
-                if (chosenCards.length > 0) {
-                    const chosenValue = chosenCards[0].card.value;
-                    const sameValueCards = playable.filter(pc => pc.card.value === chosenValue);
-                    if (sameValueCards.length > chosenCards.length) {
-                        chosenCards = sameValueCards;
-                    }
-                }
-
-                // 안전장치
-                if (chosenCards.length === 0) {
-                    chosenCards = [playable[0]];
-                }
-
-                const bestGroup = chosenCards;
-
-                const indices = bestGroup.map(pc => pc.index).sort((a, b) => b - a);
-                const cards = indices.map(i => player.hand[i]);
-
-                indices.forEach(i => player.hand.splice(i, 1));
-                cards.forEach(card => singlePlayerState.discardPile.push(card));
-                playCardPlaySound();
-
-                const lastCard = cards[cards.length - 1];
-                if (lastCard.suit !== 'black-joker' && lastCard.suit !== 'color-joker') {
-                    singlePlayerState.currentSuit = lastCard.suit;
-                }
-
-                // AI가 7을 냈을 때 무늬 선택 (카운팅 기반!)
-                if (lastCard.value === '7') {
-                    // 카운팅: 게임에 남은 무늬 수 + 내 손에 있는 무늬 수 종합 고려
-                    const suitScores = {};
-                    ['spade', 'heart', 'diamond', 'club'].forEach(suit => {
-                        // 내 손에 있는 해당 무늬 카드 수
-                        const myCount = player.hand.filter(c => c.suit === suit).length;
-                        // 게임에 남아있는 해당 무늬 카드 수 (확률적으로 유리)
-                        const gameRemaining = cardCounts.remainingSuits[suit] || 0;
-                        // 점수: 내 카드 * 3 + 게임 남은 수 (내 카드 우선)
-                        suitScores[suit] = (myCount * 3) + gameRemaining;
-                    });
-
-                    let bestSuit = singlePlayerState.currentSuit;
-                    let maxScore = 0;
-                    for (let suit in suitScores) {
-                        if (suitScores[suit] > maxScore) {
-                            maxScore = suitScores[suit];
-                            bestSuit = suit;
-                        }
-                    }
-                    singlePlayerState.currentSuit = bestSuit;
-
-                    // 알림
-                    const suitColors = { 'spade': '#000', 'heart': '#e11d48', 'diamond': '#e11d48', 'club': '#000' };
-                    const suitNameText = { 'spade': '♠ 스페이드', 'heart': '♥ 하트', 'diamond': '♦ 다이아몬드', 'club': '♣ 클로버' };
-                    const coloredSuit = `<span style="color:${suitColors[bestSuit]};background:white;padding:2px 6px;border-radius:4px;">${suitNameText[bestSuit]}</span>`;
-                    showNotification(`${player.name}님이 문양을 ${coloredSuit} (으)로 바꿨습니다!`);
-                    playSuitChangeSound();
-                }
-
-                handleSpecialCardsSingle(cards);
-
-                if (player.hand.length === 0) {
-                    const currentRank = players.filter(p => p.rank !== null).length + 1;
-                    player.rank = currentRank;
-                    setMessage(`🎊 ${player.name}님이 ${currentRank}등으로 탈출!`);
-                    renderSingle();
-                    if (isGameOverSingle()) {
-                        setTimeout(endGameSingle, 1500);
-                    } else {
-                        setTimeout(nextTurnSingle, 1500);
-                    }
-                    return;
-                }
-
-                nextTurnSingle();
             } catch (e) {
                 console.error('🚨 AI Turn Error:', e);
-                // 에러 발생 시 강제로 다음 턴으로 넘김
                 setTimeout(nextTurnSingle, 1000);
             }
         }
+
+        // 🟡 중급: 스마트 AI (일반 카드 우선, 특수카드 보존)
+        function selectSmartAI(player, playable) {
+            const jokers = playable.filter(pc => pc.card.suit === 'black-joker' || pc.card.suit === 'color-joker');
+            const aces = playable.filter(pc => pc.card.value === 'A');
+            const twos = playable.filter(pc => pc.card.value === '2');
+            const sevens = playable.filter(pc => pc.card.value === '7');
+            const normals = playable.filter(pc =>
+                pc.card.suit !== 'black-joker' &&
+                pc.card.suit !== 'color-joker' &&
+                pc.card.value !== 'A' &&
+                pc.card.value !== '2' &&
+                pc.card.value !== '7'
+            );
+
+            const isUnderAttack = singlePlayerState.attackStack > 0;
+            const myCardCount = player.hand.length;
+            const isEmergency = myCardCount <= 3;
+            const canWinNow = myCardCount === 1;
+
+            let chosenCards = [];
+
+            if (isUnderAttack) {
+                if (twos.length > 0) chosenCards = [twos[0]];
+                else if (aces.length > 0) chosenCards = [aces[0]];
+                else if (jokers.length > 0) chosenCards = [jokers[0]];
+            } else if (canWinNow) {
+                chosenCards = [playable[0]];
+            } else if (normals.length > 0) {
+                // 같은 숫자 그룹 중 가장 많은 것
+                const groups = {};
+                normals.forEach(pc => {
+                    const val = pc.card.value;
+                    if (!groups[val]) groups[val] = [];
+                    groups[val].push(pc);
+                });
+                let best = null;
+                for (let val in groups) {
+                    if (!best || groups[val].length > best.length) best = groups[val];
+                }
+                chosenCards = best;
+            } else if (sevens.length > 0 && !isEmergency) {
+                chosenCards = [sevens[0]];
+            } else if (twos.length > 0) {
+                chosenCards = [twos[0]];
+            } else if (aces.length > 0 && isEmergency) {
+                chosenCards = [aces[0]];
+            } else if (jokers.length > 0 && isEmergency) {
+                chosenCards = [jokers[0]];
+            } else {
+                chosenCards = [playable[0]];
+            }
+
+            // 같은 숫자 묶기
+            if (chosenCards.length > 0) {
+                const val = chosenCards[0].card.value;
+                const same = playable.filter(pc => pc.card.value === val);
+                if (same.length > chosenCards.length) chosenCards = same;
+            }
+
+            return chosenCards.length > 0 ? chosenCards : [playable[0]];
+        }
+
+        // 🟠 고급: 카운팅 AI (상대 패 수 & 남은 카드 분석)
+        function selectCountingAI(player, playable) {
+            const cardCounts = getCardCounts();
+
+            const jokers = playable.filter(pc => pc.card.suit === 'black-joker' || pc.card.suit === 'color-joker');
+            const aces = playable.filter(pc => pc.card.value === 'A');
+            const twos = playable.filter(pc => pc.card.value === '2');
+            const sevens = playable.filter(pc => pc.card.value === '7');
+            const normals = playable.filter(pc =>
+                pc.card.suit !== 'black-joker' &&
+                pc.card.suit !== 'color-joker' &&
+                pc.card.value !== 'A' &&
+                pc.card.value !== '2' &&
+                pc.card.value !== '7'
+            );
+
+            const myCardCount = player.hand.length;
+            const humanPlayer = players.find(p => p.isHuman);
+            const humanCardCount = humanPlayer ? humanPlayer.hand.length : 99;
+            const isUnderAttack = singlePlayerState.attackStack > 0;
+            const isEmergency = myCardCount <= 3;
+            const canWinNow = myCardCount === 1;
+
+            // 카운팅 기반 추가 분석
+            const remaining2s = cardCounts.remainingValues['2'] || 0;
+            const remainingAs = cardCounts.remainingValues['A'] || 0;
+            const remainingJokers = cardCounts.remainingValues['JOKER'] || 0;
+            const playerLikelyHasDefense = (remaining2s + remainingAs + remainingJokers) > 2;
+
+            let chosenCards = [];
+
+            // 3. 전략적 카드 선택
+            if (isUnderAttack) {
+                // 공격 받는 중 -> 방어 카드 사용 (단, 조커는 최후의 수단)
+                if (twos.length > 0) {
+                    chosenCards = [twos[0]];
+                } else if (aces.length > 0) {
+                    chosenCards = [aces[0]];
+                } else if (jokers.length > 0) {
+                    chosenCards = [jokers[0]];
+                }
+            } else if (canWinNow) {
+                // 승리 가능! -> 아무 카드나 내기
+                chosenCards = [playable[0]];
+            } else if (humanCardCount <= 2 && (twos.length > 0 || jokers.length > 0)) {
+                // 플레이어가 카드 적을 때 -> 공격!
+                // 카운팅: 방어 카드가 많이 남아있으면 공격 자제
+                if (!playerLikelyHasDefense || humanCardCount === 1) {
+                    if (twos.length > 0) {
+                        chosenCards = twos;
+                    } else if (jokers.length > 0) {
+                        chosenCards = [jokers[0]];
+                    }
+                }
+            }
+
+            // 위 조건에서 선택 안됐으면 일반 전략
+            if (chosenCards.length === 0) {
+                if (normals.length > 0) {
+                    // 일반 카드 우선 사용
+                    const normalGroups = {};
+                    normals.forEach(pc => {
+                        const val = pc.card.value;
+                        if (!normalGroups[val]) normalGroups[val] = [];
+                        normalGroups[val].push(pc);
+                    });
+
+                    let bestNormalGroup = null;
+                    for (let val in normalGroups) {
+                        if (!bestNormalGroup || normalGroups[val].length > bestNormalGroup.length) {
+                            bestNormalGroup = normalGroups[val];
+                        }
+                    }
+                    chosenCards = bestNormalGroup;
+                } else if (sevens.length > 0 && !isEmergency) {
+                    chosenCards = [sevens[0]];
+                } else if (twos.length > 0) {
+                    chosenCards = [twos[0]];
+                } else if (aces.length > 0 && isEmergency) {
+                    chosenCards = [aces[0]];
+                } else if (jokers.length > 0 && isEmergency) {
+                    chosenCards = [jokers[0]];
+                } else {
+                    chosenCards = [playable[0]];
+                }
+            }
+
+            // 같은 숫자 카드 묶기
+            if (chosenCards.length > 0) {
+                const chosenValue = chosenCards[0].card.value;
+                const sameValueCards = playable.filter(pc => pc.card.value === chosenValue);
+                if (sameValueCards.length > chosenCards.length) {
+                    chosenCards = sameValueCards;
+                }
+            }
+
+            // 안전장치
+            if (chosenCards.length === 0) {
+                chosenCards = [playable[0]];
+            }
+
+            return chosenCards;
+        }
+
+        // 카드 내기 실행 (공통 로직)
+        function executeAICardPlay(player, chosenCards, playable) {
+            if (!chosenCards || chosenCards.length === 0) {
+                chosenCards = [playable[0]];
+            }
+
+            const bestGroup = chosenCards;
+            const indices = bestGroup.map(pc => pc.index).sort((a, b) => b - a);
+            const cards = indices.map(i => player.hand[i]);
+
+            indices.forEach(i => player.hand.splice(i, 1));
+            cards.forEach(card => singlePlayerState.discardPile.push(card));
+            playCardPlaySound();
+
+            const lastCard = cards[cards.length - 1];
+            if (lastCard.suit !== 'black-joker' && lastCard.suit !== 'color-joker') {
+                singlePlayerState.currentSuit = lastCard.suit;
+            }
+
+            // AI가 7을 냈을 때 무늬 선택
+            if (lastCard.value === '7') {
+                // 내 손에 가장 많은 무늬 선택
+                const suitCounts = {};
+                player.hand.forEach(c => {
+                    if (c.suit !== 'black-joker' && c.suit !== 'color-joker') {
+                        suitCounts[c.suit] = (suitCounts[c.suit] || 0) + 1;
+                    }
+                });
+
+                let bestSuit = singlePlayerState.currentSuit;
+                let maxCount = 0;
+                for (let suit in suitCounts) {
+                    if (suitCounts[suit] > maxCount) {
+                        maxCount = suitCounts[suit];
+                        bestSuit = suit;
+                    }
+                }
+                singlePlayerState.currentSuit = bestSuit;
+
+                const suitColors = { 'spade': '#000', 'heart': '#e11d48', 'diamond': '#e11d48', 'club': '#000' };
+                const suitNameText = { 'spade': '♠ 스페이드', 'heart': '♥ 하트', 'diamond': '♦ 다이아몬드', 'club': '♣ 클로버' };
+                const coloredSuit = `<span style="color:${suitColors[bestSuit]};background:white;padding:2px 6px;border-radius:4px;">${suitNameText[bestSuit]}</span>`;
+                showNotification(`${player.name}님이 문양을 ${coloredSuit} (으)로 바꿨습니다!`);
+                playSuitChangeSound();
+            }
+
+            handleSpecialCardsSingle(cards);
+
+            if (player.hand.length === 0) {
+                const currentRank = players.filter(p => p.rank !== null).length + 1;
+                player.rank = currentRank;
+                setMessage(`🎊 ${player.name}님이 ${currentRank}등으로 탈출!`);
+                renderSingle();
+                if (isGameOverSingle()) {
+                    setTimeout(endGameSingle, 1500);
+                } else {
+                    setTimeout(nextTurnSingle, 1500);
+                }
+                return;
+            }
+
+            renderSingle();
+            nextTurnSingle();
+        }
+
 
         function endGameSingle() {
             renderSingle();
