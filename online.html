@@ -1310,8 +1310,8 @@
         }
 
         function loadAIWeights() {
-            // 1. 먼저 서버의 기본 가중치 로드 시도
-            fetch('ai_weights.json')
+            // 1. 먼저 서버의 기본 가중치 로드 시도 (캐시 방지)
+            fetch('ai_weights.json?t=' + new Date().getTime())
                 .then(res => res.json())
                 .then(serverWeights => {
                     console.log('서버 AI 가중치 로드됨:', serverWeights);
