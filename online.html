@@ -836,7 +836,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.6.10</div>
+        <div class="version-badge">v2.6.11</div>
         <div id="ai-version-display" style="
             text-align: center; 
             font-size: 0.85rem; 
@@ -3205,6 +3205,12 @@
                 // 왓치독 설정 (5초 안에 다음 턴 안 오면 강제 진행)
                 aiTurnWatchdog = setTimeout(() => {
                     console.error('🚨 AI Turn Watchdog Triggered! Forcing next turn...');
+                    // 페널티로 카드 1장 먹임
+                    const player = players[singlePlayerState.currentPlayerIndex];
+                    if (player && !player.isHuman) {
+                        drawCardsForPlayerSingle(player);
+                        renderSingle();
+                    }
                     nextTurnSingle();
                 }, 5000);
 
@@ -3764,6 +3770,12 @@
         }
 
         function endGameSingle() {
+            // 왓치독 해제 (게임 종료 후 트리거 방지)
+            if (aiTurnWatchdog) {
+                clearTimeout(aiTurnWatchdog);
+                aiTurnWatchdog = null;
+            }
+
             renderSingle();
             const sortedPlayers = [...players].sort((a, b) => {
                 if (a.rank !== null && b.rank !== null) return a.rank - b.rank;
