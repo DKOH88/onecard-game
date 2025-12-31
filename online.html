@@ -836,7 +836,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.9.5</div>
+        <div class="version-badge">v2.9.6</div>
         <div id="ai-version-display" style="
             text-align: center; 
             font-size: 0.85rem; 
@@ -1508,6 +1508,7 @@
             console.log('AI 가중치 다운로드됨:', data);
         }
         function startAIBattle() {
+            stopAITraining(); // 기존 루프 중단 (중요!)
             const games = parseInt(document.getElementById('battle-games').value) || 10;
 
             battleConfig = {
@@ -1582,6 +1583,7 @@
 
         // === AI 학습(자동 플레이) 모드 ===
         function startAITraining() {
+            stopAITraining(); // 기존 루프 중단 (중요!)
             battleConfig = null; // 배틀 초기화
 
             trainingConfig.aiCount = parseInt(document.getElementById('training-ai-count').value);
@@ -1715,6 +1717,9 @@
         }
 
         function startNextTrainingGame() {
+            // 좀비 루프 방지: 학습 모드가 꺼져있으면 즉시 종료
+            if (!isAITrainingMode) return;
+
             // === 배틀 모드 종료 체크 ===
             if (battleConfig && battleConfig.active) {
                 if (battleConfig.currentGame >= battleConfig.totalGames) {
