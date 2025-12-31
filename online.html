@@ -836,7 +836,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.9.1</div>
+        <div class="version-badge">v2.9.2</div>
         <div id="ai-version-display" style="
             text-align: center; 
             font-size: 0.85rem; 
@@ -1496,6 +1496,7 @@
 
             // 학습 모드 재사용 (속도 빠름)
             isAITrainingMode = true;
+            trainingConfig.speed = 50; // 배틀 모드는 기본적으로 빠르게 (50ms)
             isSinglePlayer = true;
 
             // 모니터 UI 재활용
