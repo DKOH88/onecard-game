@@ -96,6 +96,31 @@
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
         }
 
+        .btn-option {
+            padding: 10px 15px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            transition: all 0.2s;
+            flex: 1;
+            min-width: 60px;
+        }
+
+        .btn-option:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+
+        .btn-option.selected {
+            background: linear-gradient(135deg, #4ade80, #22c55e);
+            border-color: #4ade80;
+            color: white;
+        }
+
         .room-code-display {
             font-size: 2.5rem;
             font-weight: bold;
@@ -811,7 +836,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.5.6</div>
+        <div class="version-badge">v2.5.7</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -834,23 +859,27 @@
 
         <div id="single-player-form" class="hidden">
             <div class="input-group">
-                <label>AI 상대 수 (1~5명)</label>
-                <select id="ai-count-select" style="width:100%;padding:12px;border-radius:10px;font-size:1rem;">
-                    <option value="1">1명 (1:1 대전)</option>
-                    <option value="2">2명</option>
-                    <option value="3" selected>3명 (추천)</option>
-                    <option value="4">4명</option>
-                    <option value="5">5명 (최대)</option>
-                </select>
+                <label>AI 상대 수</label>
+                <div id="ai-count-buttons" style="display:flex; gap:5px; flex-wrap:wrap;">
+                    <button class="btn-option" data-value="1" onclick="selectAICount(1)">1명</button>
+                    <button class="btn-option" data-value="2" onclick="selectAICount(2)">2명</button>
+                    <button class="btn-option selected" data-value="3" onclick="selectAICount(3)">3명</button>
+                    <button class="btn-option" data-value="4" onclick="selectAICount(4)">4명</button>
+                    <button class="btn-option" data-value="5" onclick="selectAICount(5)">5명</button>
+                </div>
             </div>
             <div class="input-group">
                 <label>AI 난이도</label>
-                <select id="ai-difficulty-select" style="width:100%;padding:12px;border-radius:10px;font-size:1rem;">
-                    <option value="beginner">🟢 초급 (기본 AI)</option>
-                    <option value="intermediate" selected>🟡 중급 (스마트 AI)</option>
-                    <option value="advanced">🟠 고급 (카드 카운팅 AI)</option>
-                    <option value="expert">🔴 최고급 (학습된 AI)</option>
-                </select>
+                <div id="ai-difficulty-buttons" style="display:flex; gap:5px; flex-wrap:wrap;">
+                    <button class="btn-option" data-value="beginner" onclick="selectAIDifficulty('beginner')">🟢
+                        초급</button>
+                    <button class="btn-option selected" data-value="intermediate"
+                        onclick="selectAIDifficulty('intermediate')">🟡 중급</button>
+                    <button class="btn-option" data-value="advanced" onclick="selectAIDifficulty('advanced')">🟠
+                        고급</button>
+                    <button class="btn-option" data-value="expert" onclick="selectAIDifficulty('expert')">🔴
+                        최고급</button>
+                </div>
             </div>
             <button class="btn btn-primary" onclick="startSinglePlayer()">🎮 게임 시작</button>
             <button class="btn btn-secondary" onclick="hideSinglePlayerForm()">취소</button>
@@ -1243,6 +1272,24 @@
         function hideSinglePlayerForm() {
             document.getElementById('single-player-form').classList.add('hidden');
             document.getElementById('main-menu').classList.remove('hidden');
+        }
+
+        // === 싱글 플레이어 버튼 선택 ===
+        let selectedAICount = 3;
+        let selectedAIDifficulty = 'intermediate';
+
+        function selectAICount(count) {
+            selectedAICount = count;
+            document.querySelectorAll('#ai-count-buttons .btn-option').forEach(btn => {
+                btn.classList.toggle('selected', parseInt(btn.dataset.value) === count);
+            });
+        }
+
+        function selectAIDifficulty(difficulty) {
+            selectedAIDifficulty = difficulty;
+            document.querySelectorAll('#ai-difficulty-buttons .btn-option').forEach(btn => {
+                btn.classList.toggle('selected', btn.dataset.value === difficulty);
+            });
         }
 
         // === AI 학습 모드 함수 ===
@@ -1731,8 +1778,8 @@
 
         function startSinglePlayer() {
             myNickname = document.getElementById('nickname-input').value.trim() || '플레이어';
-            const aiCount = parseInt(document.getElementById('ai-count-select').value);
-            aiDifficulty = document.getElementById('ai-difficulty-select').value;
+            const aiCount = selectedAICount;
+            aiDifficulty = selectedAIDifficulty;
 
             // 최고급 난이도 시 학습된 가중치 로드
             if (aiDifficulty === 'expert') {
