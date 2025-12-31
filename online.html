@@ -836,7 +836,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.8.4</div>
+        <div class="version-badge">v2.8.5</div>
         <div id="ai-version-display" style="
             text-align: center; 
             font-size: 0.85rem; 
@@ -1685,27 +1685,60 @@
         }
 
         function startNextTrainingGame() {
-            if (trainingStats.gamesPlayed >= trainingConfig.totalGames) {
-                finishAITraining();
-                return;
+            // === 배틀 모드 종료 체크 ===
+            if (battleConfig && battleConfig.active) {
+                if (battleConfig.currentGame >= battleConfig.totalGames) {
+                    alert(`⚔️ 배틀 종료!\n\nP1(${battleConfig.p1Diff}): ${battleConfig.wins.p1}승\nP2(${battleConfig.p2Diff}): ${battleConfig.wins.p2}승\n무승부: ${battleConfig.wins.draw}`);
+                    stopAITraining();
+                    return;
+                }
+                battleConfig.currentGame++;
+                updateBattleMonitor(); // 모니터 갱신
+            } else {
+                // 일반 학습 모드 체크
+                if (trainingStats.gamesPlayed >= trainingConfig.totalGames) {
+                    finishAITraining();
+                    return;
+                }
+                trainingConfig.currentGame++;
+                // updateTrainingMonitor는 일반 모드에서만
+                if (typeof updateTrainingMonitor === 'function') updateTrainingMonitor();
             }
 
-            trainingConfig.currentGame++;
-
-            // 플레이어 배열 생성 (모두 AI)
+            // 플레이어 배열 생성
             players = [];
-            for (let i = 0; i < trainingConfig.aiCount; i++) {
+
+            if (battleConfig && battleConfig.active) {
+                // ⚔️ 배틀 모드: 1vs1 (P1 vs P2)
+                // P1
                 players.push({
-                    id: 'ai_' + i,
-                    name: AI_NAMES[i],
-                    hand: [],
-                    isMe: false,
-                    isHuman: false,
-                    isBankrupt: false,
-                    rank: null,
-                    slot: getSlotForPlayer(i, trainingConfig.aiCount, 0),
-                    strategiesUsed: []  // 이 게임에서 사용한 전략들
+                    id: 'ai-p1',
+                    name: `P1`,
+                    isHuman: false, isMe: false, hand: [], slot: 'bottom',
+                    difficulty: battleConfig.p1Diff,
+                    strategiesUsed: []
                 });
+                // P2
+                players.push({
+                    id: 'ai-p2',
+                    name: `P2`,
+                    isHuman: false, isMe: false, hand: [], slot: 'top',
+                    difficulty: battleConfig.p2Diff,
+                    strategiesUsed: []
+                });
+            } else {
+                // 🎓 일반 학습 모드 (기존 로직)
+                for (let i = 0; i < trainingConfig.aiCount; i++) {
+                    players.push({
+                        id: 'ai_' + i,
+                        name: AI_NAMES[i],
+                        hand: [],
+                        isMe: false, isHuman: false, isBankrupt: false, rank: null,
+                        slot: getSlotForPlayer(i, trainingConfig.aiCount, 0),
+                        difficulty: 'expert', // 학습은 기본적으로 최고급끼리
+                        strategiesUsed: []
+                    });
+                }
             }
 
             // 덱 생성 및 셔플
@@ -1714,7 +1747,7 @@
 
             // 카드 분배
             for (let p of players) {
-                for (let i = 0; i < 5; i++) {
+                for (let i = 0; i < 7; i++) { // 배틀은 7장씩
                     p.hand.push(singlePlayerState.deck.pop());
                 }
             }
@@ -1737,14 +1770,21 @@
             singlePlayerState.skipTurns = 0;
             trainingTurnCount = 0; // 턴 카운터 리셋
 
-            // 현재 게임 뷰 업데이트
-            updateCurrentGameView();
+            // 현재 게임 뷰 업데이트 (배틀 모드 아닐 때만 로그용)
+            if (!battleConfig || !battleConfig.active) {
+                updateCurrentGameView();
+            }
 
-            // 첫 AI 턴 시작 (초고속 모드면 즉시)
-            if (trainingConfig.speed <= 100) {
-                aiTrainingTurn();
+            // 게임 루프 시작
+            if (battleConfig && battleConfig.active) {
+                // 배틀은 초고속
+                setTimeout(aiTrainingTurn, 5);
             } else {
-                setTimeout(aiTrainingTurn, trainingConfig.speed);
+                if (trainingConfig.speed <= 100) {
+                    aiTrainingTurn();
+                } else {
+                    setTimeout(aiTrainingTurn, trainingConfig.speed);
+                }
             }
         }
 
