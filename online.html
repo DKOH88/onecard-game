@@ -836,7 +836,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.8.9</div>
+        <div class="version-badge">v2.9.1</div>
         <div id="ai-version-display" style="
             text-align: center; 
             font-size: 0.85rem; 
@@ -1282,7 +1282,6 @@
             currentSuit: null,
             skipTurns: 0
         };
-        const BANKRUPT_LIMIT = 15;
         const AI_NAMES = ['🤖 AI-1', '🦾 AI-2', '🔧 AI-3', '⚙️ AI-4', '🛠️ AI-5', '🔩 AI-6'];
 
         // AI 난이도 설정
@@ -1817,6 +1816,7 @@
 
         let trainingTurnCount = 0;
         const MAX_TURNS_PER_GAME = 500; // 무한 루프 방지
+        const BANKRUPT_LIMIT = 15; // 파산 기준 (온라인/싱글 공통)
 
         function aiTrainingTurn() {
             if (!isAITrainingMode) return;
@@ -1987,14 +1987,21 @@
             trainingStats.gamesPlayed++;
 
             // 1등 찾기
-            // 1등 찾기
             const winner = players.find(p => p.rank === 1);
+
+            // 배틀 모드 처리
             if (battleConfig && battleConfig.active) {
                 if (winner) {
                     if (winner.id === 'ai-p1') battleConfig.wins.p1++;
                     else if (winner.id === 'ai-p2') battleConfig.wins.p2++;
+                } else if (trainingTurnCount >= MAX_TURNS_PER_GAME) {
+                    // 턴 제한 도달 = 무승부 (시스템 안전 장치)
+                    // 판정승 로직 제거 (사용자 요청)
+                    if (battleConfig.wins.draw === undefined) battleConfig.wins.draw = 0;
+                    battleConfig.wins.draw++;
+                    console.log(`⚠️ Game Ended by Turn Limit (${MAX_TURNS_PER_GAME}). Result: DRAW`);
                 } else {
-                    // 승자가 없으면(턴 초과 등) 무승부
+                    // 그 외 비정상 종료
                     if (battleConfig.wins.draw === undefined) battleConfig.wins.draw = 0;
                     battleConfig.wins.draw++;
                 }
@@ -4332,7 +4339,7 @@
             const nextSuit = wasJokerAttack ? 'any' : gameState.currentSuit;
 
             // 파산 체크 (15장 초과)
-            const BANKRUPT_LIMIT = 15;
+            // const BANKRUPT_LIMIT = 15; // 전역 상수로 이동됨
             let isBankrupt = newHand.length > BANKRUPT_LIMIT;
 
             const updates = {
