@@ -836,7 +836,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.8.6</div>
+        <div class="version-badge">v2.8.7</div>
         <div id="ai-version-display" style="
             text-align: center; 
             font-size: 0.85rem; 
@@ -1821,6 +1821,10 @@
 
             trainingTurnCount++;
 
+            if (trainingTurnCount <= 5) {
+                console.log(`Turn ${trainingTurnCount}: Index ${singlePlayerState.currentPlayerIndex}, Player ${players[singlePlayerState.currentPlayerIndex]?.id}, Hand ${players[singlePlayerState.currentPlayerIndex]?.hand.length}`);
+            }
+
             // 무한 루프 방지: 500턴 넘으면 강제 종료
             if (trainingTurnCount > MAX_TURNS_PER_GAME) {
                 console.log('Training game force ended - too many turns');
@@ -2014,9 +2018,11 @@
                 });
             });
 
-            // 가중치 업데이트
-            updateAIWeights();
-            updateTrainingMonitor();
+            // 가중치 업데이트 (배틀 모드는 제외)
+            if (!battleConfig || !battleConfig.active) {
+                updateAIWeights();
+                updateTrainingMonitor();
+            }
 
             // 다음 게임 또는 종료
             setTimeout(startNextTrainingGame, trainingConfig.speed);
@@ -2063,12 +2069,15 @@
             isAITrainingMode = false;
             isSinglePlayer = false;
 
-            // 중단해도 지금까지 학습한 가중치 저장!
-            saveAIWeights();
+            // 학습 모드일 때만 저장
+            if (!battleConfig || !battleConfig.active) {
+                // 중단해도 지금까지 학습한 가중치 저장!
+                saveAIWeights();
 
-            // JSON 파일 자동 다운로드
-            downloadAIWeights();
-            console.log('학습 중단 - 가중치 저장 및 다운로드됨:', aiWeights);
+                // JSON 파일 자동 다운로드
+                downloadAIWeights();
+                console.log('학습 중단 - 가중치 저장 및 다운로드됨:', aiWeights);
+            }
 
             closeTrainingMonitor();
         }
