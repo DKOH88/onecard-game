@@ -836,7 +836,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.6.9</div>
+        <div class="version-badge">v2.6.10</div>
         <div id="ai-version-display" style="
             text-align: center; 
             font-size: 0.85rem; 
@@ -3202,11 +3202,11 @@
                 setMessage(''); // AI 턴이면 메시지 클리어
                 const delay = 1000 + Math.random() * 2000;
 
-                // 왓치독 설정 (8초 안에 다음 턴 안 오면 강제 진행)
+                // 왓치독 설정 (5초 안에 다음 턴 안 오면 강제 진행)
                 aiTurnWatchdog = setTimeout(() => {
                     console.error('🚨 AI Turn Watchdog Triggered! Forcing next turn...');
                     nextTurnSingle();
-                }, 8000);
+                }, 5000);
 
                 setTimeout(aiTurnSingle, delay);
             }
