@@ -836,7 +836,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.5.8</div>
+        <div class="version-badge">v2.5.9</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -1791,6 +1791,11 @@
         function stopAITraining() {
             isAITrainingMode = false;
             isSinglePlayer = false;
+
+            // 중단해도 지금까지 학습한 가중치 저장!
+            saveAIWeights();
+            console.log('학습 중단 - 가중치 저장됨:', aiWeights);
+
             closeTrainingMonitor();
         }
 
