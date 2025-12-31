@@ -836,7 +836,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.6.1</div>
+        <div class="version-badge">v2.6.2</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -905,17 +905,12 @@
                     <option value="100">초고속 (0.1초)</option>
                 </select>
             </div>
-            <div class="input-group">
-                <label>학습 게임 수</label>
-                <select id="training-games" style="width:100%;padding:12px;border-radius:10px;font-size:1rem;">
-                    <option value="10">10게임</option>
-                    <option value="30" selected>30게임</option>
-                    <option value="50">50게임</option>
-                    <option value="100">100게임</option>
-                </select>
-            </div>
+            <p style="text-align:center;color:#888;font-size:0.9rem;margin:10px 0;">
+                ⚠️ 학습은 중단 버튼을 누르거나 브라우저를 닫을 때까지 계속됩니다.<br>
+                중단 시 자동으로 가중치 파일이 다운로드됩니다.
+            </p>
             <button class="btn" style="background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;width:100%;"
-                onclick="startAITraining()">🎓 학습 시작</button>
+                onclick="startAITraining()">🎓 무한 학습 시작</button>
             <button class="btn btn-secondary" onclick="hideAITrainingForm()">취소</button>
         </div>
 
@@ -1365,7 +1360,7 @@
         function startAITraining() {
             trainingConfig.aiCount = parseInt(document.getElementById('training-ai-count').value);
             trainingConfig.speed = parseInt(document.getElementById('training-speed').value);
-            trainingConfig.totalGames = parseInt(document.getElementById('training-games').value);
+            trainingConfig.totalGames = Infinity; // 무한 학습
             trainingConfig.currentGame = 0;
 
             // 통계 초기화
@@ -1407,15 +1402,9 @@
                         </h2>
                         
                         <div style="background:rgba(0,0,0,0.3); padding:15px; border-radius:10px; margin-bottom:15px;">
-                            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                                <span>진행률</span>
-                                <span id="training-progress">0 / ${trainingConfig.totalGames}</span>
-                            </div>
-                            <div style="background:#333; border-radius:5px; height:20px; overflow:hidden;">
-                                <div id="training-progress-bar" style="
-                                    background: linear-gradient(90deg, #a855f7, #7c3aed);
-                                    height: 100%; width: 0%; transition: width 0.3s;
-                                "></div>
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span>🎮 학습된 게임 수</span>
+                                <span id="training-progress" style="font-size:2rem; color:#4ade80;">0</span>
                             </div>
                         </div>
 
@@ -1449,15 +1438,13 @@
 
         function updateTrainingMonitor() {
             const progress = document.getElementById('training-progress');
-            const progressBar = document.getElementById('training-progress-bar');
             const aiStats = document.getElementById('ai-win-stats');
             const strategyStats = document.getElementById('strategy-stats');
 
             if (!progress) return;
 
-            // 진행률 업데이트
-            progress.textContent = `${trainingStats.gamesPlayed} / ${trainingConfig.totalGames}`;
-            progressBar.style.width = `${(trainingStats.gamesPlayed / trainingConfig.totalGames) * 100}%`;
+            // 학습된 게임 수 업데이트
+            progress.textContent = trainingStats.gamesPlayed;
 
             // AI 승률 업데이트
             let aiHtml = '';
@@ -1841,7 +1828,10 @@
 
             // 중단해도 지금까지 학습한 가중치 저장!
             saveAIWeights();
-            console.log('학습 중단 - 가중치 저장됨:', aiWeights);
+
+            // JSON 파일 자동 다운로드
+            downloadAIWeights();
+            console.log('학습 중단 - 가중치 저장 및 다운로드됨:', aiWeights);
 
             closeTrainingMonitor();
         }
@@ -4039,6 +4029,12 @@
         window.addEventListener('beforeunload', function (e) {
             if (isAITrainingMode) {
                 saveAIWeights();
+                // 브라우저 종료 시 다운로드 시도 (일부 브라우저에서는 차단될 수 있음)
+                try {
+                    downloadAIWeights();
+                } catch (err) {
+                    console.log('다운로드 차단됨 - localStorage에는 저장됨');
+                }
                 console.log('브라우저 종료 - AI 가중치 자동 저장됨');
             }
         });
