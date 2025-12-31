@@ -839,6 +839,26 @@
                     <option value="5">5명 (최대)</option>
                 </select>
             </div>
+            <div class="input-group">
+                <label>AI 난이도</label>
+                <div id="ai-difficulty-buttons" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
+                    <button type="button" class="btn-option" data-value="beginner"
+                        onclick="selectAIDifficulty('beginner')"
+                        style="flex:1;min-width:80px;padding:10px;border-radius:8px;border:2px solid #22c55e;background:#1a1a2e;color:#22c55e;cursor:pointer;">
+                        🟢<br>초급
+                    </button>
+                    <button type="button" class="btn-option selected" data-value="intermediate"
+                        onclick="selectAIDifficulty('intermediate')"
+                        style="flex:1;min-width:80px;padding:10px;border-radius:8px;border:2px solid #eab308;background:#eab308;color:#000;cursor:pointer;">
+                        🟡<br>중급
+                    </button>
+                    <button type="button" class="btn-option" data-value="advanced"
+                        onclick="selectAIDifficulty('advanced')"
+                        style="flex:1;min-width:80px;padding:10px;border-radius:8px;border:2px solid #f97316;background:#1a1a2e;color:#f97316;cursor:pointer;">
+                        🟠<br>고급
+                    </button>
+                </div>
+            </div>
             <button class="btn btn-primary" onclick="startSinglePlayer()">🎮 게임 시작</button>
             <button class="btn btn-secondary" onclick="hideSinglePlayerForm()">취소</button>
         </div>
@@ -1143,6 +1163,7 @@
         };
         const BANKRUPT_LIMIT = 15;
         const AI_NAMES = ['🤖 AI-1', '🦾 AI-2', '🔧 AI-3', '⚙️ AI-4', '🛠️ AI-5'];
+        let aiDifficulty = 'intermediate'; // 기본값: 중급
 
         const suitSymbols = {
             'spade': '♠', 'heart': '♥', 'diamond': '♦', 'club': '♣'
@@ -1167,6 +1188,20 @@
         function hideSinglePlayerForm() {
             document.getElementById('single-player-form').classList.add('hidden');
             document.getElementById('main-menu').classList.remove('hidden');
+        }
+
+        function selectAIDifficulty(difficulty) {
+            aiDifficulty = difficulty;
+            const colors = {
+                'beginner': '#22c55e',
+                'intermediate': '#eab308',
+                'advanced': '#f97316'
+            };
+            document.querySelectorAll('#ai-difficulty-buttons .btn-option').forEach(btn => {
+                const isSelected = btn.dataset.value === difficulty;
+                btn.style.backgroundColor = isSelected ? colors[difficulty] : '#1a1a2e';
+                btn.style.color = isSelected ? (difficulty === 'intermediate' ? '#000' : '#fff') : colors[btn.dataset.value];
+            });
         }
 
         function startSinglePlayer() {
