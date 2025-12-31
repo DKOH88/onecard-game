@@ -836,7 +836,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.8.0</div>
+        <div class="version-badge">v2.8.1</div>
         <div id="ai-version-display" style="
             text-align: center; 
             font-size: 0.85rem; 
@@ -854,6 +854,11 @@
                 <input type="text" id="nickname-input" placeholder="닉네임을 입력하세요" maxlength="10">
             </div>
 
+            <p style="text-align:center; margin: 15px 0 5px; font-weight:bold; color:#f472b6;">⚔️ AI 배틀 아레나 (New!)</p>
+            <button class="btn" style="background:linear-gradient(135deg,#f472b6,#db2777);color:#fff;"
+                onclick="document.getElementById('ai-battle-form').classList.remove('hidden')">🥊 배틀 시뮬레이션</button>
+
+
             <p style="text-align:center; margin: 15px 0 5px; font-weight:bold; color:#4ade80;">온라인 멀티플레이</p>
             <button class="btn btn-primary" onclick="createRoom()">🏠 방 만들기</button>
             <button class="btn btn-secondary" onclick="showJoinForm()">🚪 방 참가하기</button>
@@ -865,6 +870,57 @@
             <p style="text-align:center; margin: 20px 0 5px; font-weight:bold; color:#a855f7;">🧠 AI 학습 모드</p>
             <button class="btn" style="background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;"
                 onclick="showAITrainingForm()">🎓 AI 학습 시작</button>
+
+        </div>
+
+        <div id="ai-battle-form" class="hidden">
+            <h3 style="text-align:center;color:#f472b6;margin-bottom:15px;">⚔️ AI 배틀 아레나</h3>
+
+            <div style="display:flex;gap:10px;justify-content:center;margin-bottom:15px;">
+                <div style="text-align:center;">
+                    <label style="display:block;margin-bottom:5px;">Player 1</label>
+                    <div class="diff-btn-group" id="battle-p1-group"
+                        style="display:flex;flex-direction:column;gap:5px;">
+                        <button class="diff-btn" data-value="beginner"
+                            onclick="selectBattleAI('p1', 'beginner')">초급</button>
+                        <button class="diff-btn" data-value="intermediate"
+                            onclick="selectBattleAI('p1', 'intermediate')">중급</button>
+                        <button class="diff-btn" data-value="advanced"
+                            onclick="selectBattleAI('p1', 'advanced')">고급</button>
+                        <button class="diff-btn selected" data-value="expert"
+                            onclick="selectBattleAI('p1', 'expert')">최고급</button>
+                    </div>
+                </div>
+
+                <div style="display:flex;align-items:center;font-weight:bold;font-size:1.2rem;">VS</div>
+
+                <div style="text-align:center;">
+                    <label style="display:block;margin-bottom:5px;">Player 2</label>
+                    <div class="diff-btn-group" id="battle-p2-group"
+                        style="display:flex;flex-direction:column;gap:5px;">
+                        <button class="diff-btn selected" data-value="beginner"
+                            onclick="selectBattleAI('p2', 'beginner')">초급</button>
+                        <button class="diff-btn" data-value="intermediate"
+                            onclick="selectBattleAI('p2', 'intermediate')">중급</button>
+                        <button class="diff-btn" data-value="advanced"
+                            onclick="selectBattleAI('p2', 'advanced')">고급</button>
+                        <button class="diff-btn" data-value="expert"
+                            onclick="selectBattleAI('p2', 'expert')">최고급</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>시뮬레이션 횟수</label>
+                <input type="number" id="battle-games" value="10" min="1" max="1000"
+                    style="width:100%;padding:10px;text-align:center;border-radius:10px;border:none;">
+            </div>
+
+            <button class="btn btn-primary" style="background-color:#db2777;width:100%;" onclick="startAIBattle()">
+                ⚔️ 배틀 시작
+            </button>
+            <button class="btn btn-secondary"
+                onclick="document.getElementById('ai-battle-form').classList.add('hidden')">취소</button>
         </div>
 
         <div id="single-player-form" class="hidden">
