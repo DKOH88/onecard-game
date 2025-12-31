@@ -2778,67 +2778,72 @@
 
         // 카드 내기 실행 (공통 로직)
         function executeAICardPlay(player, chosenCards, playable) {
-            if (!chosenCards || chosenCards.length === 0) {
-                chosenCards = [playable[0]];
-            }
-
-            const bestGroup = chosenCards;
-            const indices = bestGroup.map(pc => pc.index).sort((a, b) => b - a);
-            const cards = indices.map(i => player.hand[i]);
-
-            indices.forEach(i => player.hand.splice(i, 1));
-            cards.forEach(card => singlePlayerState.discardPile.push(card));
-            playCardPlaySound();
-
-            const lastCard = cards[cards.length - 1];
-            if (lastCard.suit !== 'black-joker' && lastCard.suit !== 'color-joker') {
-                singlePlayerState.currentSuit = lastCard.suit;
-            }
-
-            // AI가 7을 냈을 때 무늬 선택
-            if (lastCard.value === '7') {
-                // 내 손에 가장 많은 무늬 선택
-                const suitCounts = {};
-                player.hand.forEach(c => {
-                    if (c.suit !== 'black-joker' && c.suit !== 'color-joker') {
-                        suitCounts[c.suit] = (suitCounts[c.suit] || 0) + 1;
-                    }
-                });
-
-                let bestSuit = singlePlayerState.currentSuit;
-                let maxCount = 0;
-                for (let suit in suitCounts) {
-                    if (suitCounts[suit] > maxCount) {
-                        maxCount = suitCounts[suit];
-                        bestSuit = suit;
-                    }
+            try {
+                if (!chosenCards || chosenCards.length === 0) {
+                    chosenCards = [playable[0]];
                 }
-                singlePlayerState.currentSuit = bestSuit;
 
-                const suitColors = { 'spade': '#000', 'heart': '#e11d48', 'diamond': '#e11d48', 'club': '#000' };
-                const suitNameText = { 'spade': '♠ 스페이드', 'heart': '♥ 하트', 'diamond': '♦ 다이아몬드', 'club': '♣ 클로버' };
-                const coloredSuit = `<span style="color:${suitColors[bestSuit]};background:white;padding:2px 6px;border-radius:4px;">${suitNameText[bestSuit]}</span>`;
-                showNotification(`${player.name}님이 문양을 ${coloredSuit} (으)로 바꿨습니다!`);
-                playSuitChangeSound();
-            }
+                const bestGroup = chosenCards;
+                const indices = bestGroup.map(pc => pc.index).sort((a, b) => b - a);
+                const cards = indices.map(i => player.hand[i]);
 
-            handleSpecialCardsSingle(cards);
+                indices.forEach(i => player.hand.splice(i, 1));
+                cards.forEach(card => singlePlayerState.discardPile.push(card));
+                playCardPlaySound();
 
-            if (player.hand.length === 0) {
-                const currentRank = players.filter(p => p.rank !== null).length + 1;
-                player.rank = currentRank;
-                setMessage(`🎊 ${player.name}님이 ${currentRank}등으로 탈출!`);
+                const lastCard = cards[cards.length - 1];
+                if (lastCard.suit !== 'black-joker' && lastCard.suit !== 'color-joker') {
+                    singlePlayerState.currentSuit = lastCard.suit;
+                }
+
+                // AI가 7을 냈을 때 무늬 선택
+                if (lastCard.value === '7') {
+                    const suitCounts = {};
+                    player.hand.forEach(c => {
+                        if (c.suit !== 'black-joker' && c.suit !== 'color-joker') {
+                            suitCounts[c.suit] = (suitCounts[c.suit] || 0) + 1;
+                        }
+                    });
+
+                    let bestSuit = singlePlayerState.currentSuit || 'spade';
+                    let maxCount = 0;
+                    for (let suit in suitCounts) {
+                        if (suitCounts[suit] > maxCount) {
+                            maxCount = suitCounts[suit];
+                            bestSuit = suit;
+                        }
+                    }
+                    singlePlayerState.currentSuit = bestSuit;
+
+                    const suitColors = { 'spade': '#000', 'heart': '#e11d48', 'diamond': '#e11d48', 'club': '#000' };
+                    const suitNameText = { 'spade': '♠ 스페이드', 'heart': '♥ 하트', 'diamond': '♦ 다이아몬드', 'club': '♣ 클로버' };
+                    const coloredSuit = `<span style="color:${suitColors[bestSuit]};background:white;padding:2px 6px;border-radius:4px;">${suitNameText[bestSuit]}</span>`;
+                    showNotification(`${player.name}님이 문양을 ${coloredSuit} (으)로 바꿨습니다!`);
+                    playSuitChangeSound();
+                }
+
+                handleSpecialCardsSingle(cards);
+
+                if (player.hand.length === 0) {
+                    const currentRank = players.filter(p => p.rank !== null).length + 1;
+                    player.rank = currentRank;
+                    setMessage(`🎊 ${player.name}님이 ${currentRank}등으로 탈출!`);
+                    renderSingle();
+                    if (isGameOverSingle()) {
+                        setTimeout(endGameSingle, 1500);
+                    } else {
+                        setTimeout(nextTurnSingle, 1500);
+                    }
+                    return;
+                }
+
                 renderSingle();
-                if (isGameOverSingle()) {
-                    setTimeout(endGameSingle, 1500);
-                } else {
-                    setTimeout(nextTurnSingle, 1500);
-                }
-                return;
+                nextTurnSingle();
+            } catch (e) {
+                console.error('🚨 executeAICardPlay Error:', e);
+                renderSingle();
+                setTimeout(nextTurnSingle, 1000);
             }
-
-            renderSingle();
-            nextTurnSingle();
         }
 
 
