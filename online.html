@@ -836,7 +836,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.5.9</div>
+        <div class="version-badge">v2.6.0</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -3983,6 +3983,14 @@
         // 닉네임 입력 시 저장
         document.getElementById('nickname-input').addEventListener('input', function (e) {
             localStorage.setItem('onecard_nickname', e.target.value);
+        });
+
+        // 브라우저 종료/새로고침 시 AI 가중치 자동 저장
+        window.addEventListener('beforeunload', function (e) {
+            if (isAITrainingMode) {
+                saveAIWeights();
+                console.log('브라우저 종료 - AI 가중치 자동 저장됨');
+            }
         });
     </script>
 </body>
