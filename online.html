@@ -836,7 +836,17 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.6.2</div>
+        <div class="version-badge">v2.6.3</div>
+        <div id="ai-version-display" style="
+            text-align: center; 
+            font-size: 0.85rem; 
+            color: #a855f7; 
+            margin: 5px 0 15px;
+            padding: 8px;
+            background: rgba(168, 85, 247, 0.1);
+            border-radius: 8px;
+            display: none;
+        ">🧠 AI 가중치 로딩 중...</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -1313,6 +1323,13 @@
                         counterAttackWeight: serverWeights.counterAttackWeight || 1.0
                     };
 
+                    // AI 버전 정보 저장
+                    window.aiVersionInfo = {
+                        gamesLearned: serverWeights.gamesLearned || 0,
+                        lastUpdated: serverWeights.lastUpdated || null
+                    };
+                    updateAIVersionDisplay();
+
                     // 2. localStorage에 더 최신 데이터가 있으면 덮어쓰기
                     const localSaved = localStorage.getItem('onecard_ai_weights');
                     if (localSaved) {
@@ -1332,7 +1349,24 @@
                             aiWeights = JSON.parse(saved);
                         } catch (e) { }
                     }
+                    window.aiVersionInfo = { gamesLearned: 0, lastUpdated: null };
+                    updateAIVersionDisplay();
                 });
+        }
+
+        function updateAIVersionDisplay() {
+            const display = document.getElementById('ai-version-display');
+            if (!display) return;
+
+            const info = window.aiVersionInfo || { gamesLearned: 0, lastUpdated: null };
+            if (info.gamesLearned > 0) {
+                const date = info.lastUpdated ? new Date(info.lastUpdated).toLocaleDateString('ko-KR') : '알 수 없음';
+                display.innerHTML = `🧠 AI 학습: <strong>${info.gamesLearned.toLocaleString()}게임</strong> (${date})`;
+                display.style.display = 'block';
+            } else {
+                display.innerHTML = '🧠 AI: 기본 가중치 사용 중';
+                display.style.display = 'block';
+            }
         }
 
         function saveAIWeights() {
