@@ -836,7 +836,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.7.1</div>
+        <div class="version-badge">v2.7.2</div>
         <div id="ai-version-display" style="
             text-align: center; 
             font-size: 0.85rem; 
@@ -3737,6 +3737,8 @@
 
             // AI가 7을 냈을 때 무늬 선택 (카운팅 기반!)
             if (lastCard.value === '7') {
+                const cardCounts = getCardCounts(); // ReferenceError 수정: 함수 호출로 변수 정의
+
                 // 카운팅: 게임에 남은 무늬 수 + 내 손에 있는 무늬 수 종합 고려
                 const suitScores = {};
                 ['spade', 'heart', 'diamond', 'club'].forEach(suit => {
