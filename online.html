@@ -836,7 +836,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.9.2</div>
+        <div class="version-badge">v2.9.3</div>
         <div id="ai-version-display" style="
             text-align: center; 
             font-size: 0.85rem; 
@@ -1354,6 +1354,10 @@
         function showBattleForm() {
             document.getElementById('main-menu').classList.add('hidden');
             document.getElementById('ai-battle-form').classList.remove('hidden');
+
+            // UI 색상 초기화 (현재 설정된 난이도에 맞춰 색상 적용)
+            selectBattleAI('p1', battleP1Diff);
+            selectBattleAI('p2', battleP2Diff);
         }
 
         function hideBattleForm() {
@@ -1362,14 +1366,35 @@
         }
 
         function selectBattleAI(player, diff) {
+            const colors = {
+                'beginner': '#22c55e',      // Green
+                'intermediate': '#eab308',  // Yellow-Gold
+                'advanced': '#f97316',      // Orange
+                'expert': '#ef4444'         // Red
+            };
+
             if (player === 'p1') {
                 battleP1Diff = diff;
-                document.querySelectorAll('#battle-p1-group .diff-btn').forEach(b => b.classList.remove('selected'));
-                document.querySelector(`#battle-p1-group .diff-btn[data-value="${diff}"]`).classList.add('selected');
+                document.querySelectorAll('#battle-p1-group .diff-btn').forEach(b => {
+                    b.classList.remove('selected');
+                    b.style.backgroundColor = ''; // Reset
+                    b.style.color = '';
+                });
+                const btn = document.querySelector(`#battle-p1-group .diff-btn[data-value="${diff}"]`);
+                btn.classList.add('selected');
+                btn.style.backgroundColor = colors[diff];
+                btn.style.color = '#fff'; // Text white for contrast
             } else {
                 battleP2Diff = diff;
-                document.querySelectorAll('#battle-p2-group .diff-btn').forEach(b => b.classList.remove('selected'));
-                document.querySelector(`#battle-p2-group .diff-btn[data-value="${diff}"]`).classList.add('selected');
+                document.querySelectorAll('#battle-p2-group .diff-btn').forEach(b => {
+                    b.classList.remove('selected');
+                    b.style.backgroundColor = '';
+                    b.style.color = '';
+                });
+                const btn = document.querySelector(`#battle-p2-group .diff-btn[data-value="${diff}"]`);
+                btn.classList.add('selected');
+                btn.style.backgroundColor = colors[diff];
+                btn.style.color = '#fff';
             }
         }
 
