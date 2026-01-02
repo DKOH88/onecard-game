@@ -871,7 +871,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.9.3</div>
+        <div class="version-badge">v2.9.4</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -2988,9 +2988,9 @@
             });
             rankHtml += '</div>';
             rankHtml += `
-            <div style="display:flex; flex-direction:column; gap:10px; margin-top:20px;">
-                <button class="btn btn-primary" style="width:100%;" onclick="restartSingleGame()">🔄 게임 재시작 (승자 선)</button>
-                <button class="btn btn-primary" style="width:100%; background-color:#6b7280;" onclick="location.reload()">🚪 대기실로 나가기</button>
+            <div style="display:flex; flex-direction:column; gap:10px; margin-top:20px; margin-bottom:30px; position:relative; z-index:600;">
+                <button class="btn btn-primary" style="width:100%; position:relative; z-index:601;" onclick="restartSingleGame()">🔄 게임 재시작 (승자 선)</button>
+                <button class="btn btn-primary" style="width:100%; background-color:#6b7280; position:relative; z-index:601;" onclick="location.reload()">🚪 대기실로 나가기</button>
             </div>
             `;
 
