@@ -845,7 +845,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.6.9</div>
+        <div class="version-badge">v2.7.0</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -1761,7 +1761,7 @@
                     // 내 카드 (앞면) - 라벨을 녹색 테두리 밖으로 이동
                     slotEl.innerHTML = `
                         <div class="player-area ${isCurrent ? 'current-turn' : ''}">
-                            <div class="cards-row" style="${p.hand.length > 6 ? 'flex-wrap:wrap;justify-content:center;height:auto;' : ''}">
+                            <div class="cards-row" style="${p.hand.length > 6 ? 'flex-wrap:wrap;justify-content:center;height:auto;row-gap:-30px;margin-top:0;' : ''}">
                                 ${p.hand.map((card, i) => {
                         // 🚀 [개선] 선택된 카드가 있으면 같은 숫자 카드도 playable 표시
                         const firstSelectedCard = selectedCards.length > 0 ? p.hand[selectedCards[0]] : null;
@@ -1770,10 +1770,12 @@
                         const selected = selectedCards.includes(i);
                         const isNormalSuit = ['spade', 'heart', 'diamond', 'club'].includes(card.suit);
                         const valueClass = isNormalSuit ? `val-${card.value}` : '';
+                        // 6장 이상일 때 줄바꿈 시 위아래 겹침 (7번째 카드부터 margin-top 적용)
+                        const needsOverlap = p.hand.length > 6 && i >= 6;
                         return `
                                         <div class="card ${card.suit} ${valueClass} ${playable ? 'playable' : ''} ${selected ? 'selected' : ''}"
                                              onclick="toggleCardSelection(${i})"
-                                             style="${p.hand.length > 6 ? 'margin-bottom:-30px;' : ''}">
+                                             style="${needsOverlap ? 'margin-top:-40px;' : ''}">
                                         </div>
                                     `;
                     }).join('')}
