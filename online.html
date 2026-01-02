@@ -854,7 +854,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.7.8</div>
+        <div class="version-badge">v2.7.9</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -1771,8 +1771,11 @@
                     slotEl.innerHTML = `
                         <div class="player-area ${isCurrent ? 'current-turn' : ''}">
                             ${(() => {
-                            const firstRow = p.hand.slice(0, 6);
-                            const secondRow = p.hand.slice(6);
+                            const CARDS_PER_ROW = 6;
+                            const rows = [];
+                            for (let r = 0; r < Math.ceil(p.hand.length / CARDS_PER_ROW); r++) {
+                                rows.push(p.hand.slice(r * CARDS_PER_ROW, (r + 1) * CARDS_PER_ROW));
+                            }
 
                             const renderCard = (card, i) => {
                                 const firstSelectedCard = selectedCards.length > 0 ? p.hand[selectedCards[0]] : null;
@@ -1785,17 +1788,11 @@
                                              onclick="toggleCardSelection(${i})"></div>`;
                             };
 
-                            let html = '<div class="cards-row" style="justify-content:center;">';
-                            html += firstRow.map((card, i) => renderCard(card, i)).join('');
-                            html += '</div>';
-
-                            if (secondRow.length > 0) {
-                                html += '<div class="cards-row" style="justify-content:center;margin-top:-30px;">';
-                                html += secondRow.map((card, i) => renderCard(card, i + 6)).join('');
-                                html += '</div>';
-                            }
-
-                            return html;
+                            return rows.map((row, rowIdx) => {
+                                const style = rowIdx === 0 ? 'justify-content:center;' : 'justify-content:center;margin-top:-30px;';
+                                const startIdx = rowIdx * CARDS_PER_ROW;
+                                return `<div class="cards-row" style="${style}">${row.map((card, i) => renderCard(card, startIdx + i)).join('')}</div>`;
+                            }).join('');
                         })()}
                         </div>
                             ${p.name} (나)
@@ -2147,8 +2144,11 @@
                         <div class="player-area ${isCurrent ? 'current-turn' : ''} ${p.isBankrupt ? 'bankrupt' : ''}">
                             ${(() => {
                             if (p.rank) return '';  // 이미 완료된 플레이어는 카드 안 보임
-                            const firstRow = p.hand.slice(0, 6);
-                            const secondRow = p.hand.slice(6);
+                            const CARDS_PER_ROW = 6;
+                            const rows = [];
+                            for (let r = 0; r < Math.ceil(p.hand.length / CARDS_PER_ROW); r++) {
+                                rows.push(p.hand.slice(r * CARDS_PER_ROW, (r + 1) * CARDS_PER_ROW));
+                            }
 
                             const renderCard = (card, i) => {
                                 const firstSelectedCard = selectedCards.length > 0 ? p.hand[selectedCards[0]] : null;
@@ -2161,17 +2161,11 @@
                                              onclick="toggleCardSelectionSingle(${i})"></div>`;
                             };
 
-                            let html = '<div class="cards-row" style="justify-content:center;">';
-                            html += firstRow.map((card, i) => renderCard(card, i)).join('');
-                            html += '</div>';
-
-                            if (secondRow.length > 0) {
-                                html += '<div class="cards-row" style="justify-content:center;margin-top:-30px;">';
-                                html += secondRow.map((card, i) => renderCard(card, i + 6)).join('');
-                                html += '</div>';
-                            }
-
-                            return html;
+                            return rows.map((row, rowIdx) => {
+                                const style = rowIdx === 0 ? 'justify-content:center;' : 'justify-content:center;margin-top:-30px;';
+                                const startIdx = rowIdx * CARDS_PER_ROW;
+                                return `<div class="cards-row" style="${style}">${row.map((card, i) => renderCard(card, startIdx + i)).join('')}</div>`;
+                            }).join('');
                         })()}
                         </div>
                         <div class="player-label" style="margin-top:15px;text-align:center;">
