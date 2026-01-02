@@ -871,7 +871,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.9.2</div>
+        <div class="version-badge">v2.9.3</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -2033,6 +2033,9 @@
         }
 
         function clearSelection() {
+            // 문양 선택 팝업 닫기
+            document.getElementById('suit-selector').style.display = 'none';
+
             selectedCards = [];
             if (isSinglePlayer) {
                 renderSingle();
@@ -2340,6 +2343,9 @@
         }
 
         function playSelectedCardsSingle() {
+            // 문양 선택 팝업이 열려있으면 닫기 (이전 7카드 선택 후 다른 카드 낼 때 버그 방지)
+            document.getElementById('suit-selector').style.display = 'none';
+
             if (selectedCards.length === 0) return;
 
             const player = players.find(p => p.isHuman);
@@ -2556,6 +2562,10 @@
         }
 
         function nextTurnSingle() {
+            // 턴 변경 시 문양 선택 팝업 닫기
+            document.getElementById('suit-selector').style.display = 'none';
+            selectedCards = [];  // 선택 카드도 초기화
+
             const activePlayers = players.filter(p => !p.isBankrupt && p.rank === null);
 
             if (activePlayers.length <= 1) {
