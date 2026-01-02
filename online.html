@@ -871,7 +871,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.9.7</div>
+        <div class="version-badge">v2.9.8</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -3003,6 +3003,10 @@
         }
 
         function restartSingleGame() {
+            // 내 카드 영역 다시 보이기
+            const bottomSlot = document.getElementById('slot-bottom');
+            if (bottomSlot) bottomSlot.style.display = '';
+
             // 승자 확인 (1등)
             const winner = players.find(p => p.rank === 1);
             let startPlayerIndex = 0;
