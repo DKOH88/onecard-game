@@ -801,6 +801,33 @@
                 width: 40px;
                 height: 56px;
             }
+
+            /* 🚀 [모바일 개선] 좌우 AI 상태창 위치 조정 */
+            .player-slot.left {
+                left: 5px !important;
+                top: 35% !important;
+                transform: translateY(-50%) !important;
+            }
+
+            .player-slot.right {
+                right: 5px !important;
+                top: 35% !important;
+                transform: translateY(-50%) !important;
+            }
+
+            /* 🚀 [모바일 개선] 메시지 박스를 가운데 카드 아래로 이동 */
+            .center-area {
+                flex-direction: column !important;
+            }
+
+            .center-area .message-box {
+                order: 2 !important;
+                margin-top: 15px !important;
+            }
+
+            .center-area .deck-area {
+                order: 1 !important;
+            }
         }
     </style>
 </head>
@@ -811,7 +838,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.6.3</div>
+        <div class="version-badge">v2.6.4</div>
 
         <div id="main-menu">
             <div class="input-group">
