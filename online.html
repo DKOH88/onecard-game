@@ -871,7 +871,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.9.5</div>
+        <div class="version-badge">v2.9.6</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -3242,9 +3242,11 @@
                 const { newHand, newDiscardPile, newDeck, newAttackStack, newAttackType,
                     newSkipTurns, newDirection, nextPlayerIndex } = window.pendingUpdate;
 
-                // 알림 메시지 생성
+                // 알림 메시지 생성 (색상 적용)
+                const suitColors = { 'spade': '#000', 'heart': '#e11d48', 'diamond': '#e11d48', 'club': '#000' };
                 const suitNames = { 'spade': '♠ 스페이드', 'heart': '♥ 하트', 'diamond': '♦ 다이아몬드', 'club': '♣ 클로버' };
-                const msg = `${myNickname}님이 문양을 [${suitNames[suit]}]로 바꿨습니다!`;
+                const coloredSuit = `<span style="color:${suitColors[suit]};background:white;padding:2px 6px;border-radius:4px;">${suitNames[suit]}</span>`;
+                const msg = `${myNickname}님이 문양을 ${coloredSuit} (으)로 바꿨습니다!`;
                 playSuitChangeSound(); // 소리 추가
 
                 const updates = {
