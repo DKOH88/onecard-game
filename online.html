@@ -606,8 +606,8 @@
             position: fixed !important;
             bottom: 30px;
             left: 30px;
-            width: 48px;
-            height: 66px;
+            width: 53px;
+            height: 73px;
             z-index: 100;
             cursor: pointer;
         }
@@ -869,7 +869,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.9.0</div>
+        <div class="version-badge">v2.9.1</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -888,14 +888,25 @@
 
         <div id="single-player-form" class="hidden">
             <div class="input-group">
-                <label>AI 상대 수 (1~5명)</label>
-                <select id="ai-count-select" style="width:100%;padding:12px;border-radius:10px;font-size:1rem;">
-                    <option value="1">1명 (1:1 대전)</option>
-                    <option value="2">2명</option>
-                    <option value="3" selected>3명 (추천)</option>
-                    <option value="4">4명</option>
-                    <option value="5">5명 (최대)</option>
-                </select>
+                <label>AI 상대 수</label>
+                <div id="ai-count-buttons" style="display:flex;gap:8px;justify-content:center;">
+                    <button type="button" class="ai-count-btn" data-count="1" onclick="selectAICount(1)"
+                        style="flex:1;padding:12px 5px;border-radius:8px;border:2px solid #6366f1;background:#1a1a2e;color:#6366f1;cursor:pointer;font-size:1rem;font-weight:bold;">
+                        1명
+                    </button>
+                    <button type="button" class="ai-count-btn" data-count="2" onclick="selectAICount(2)"
+                        style="flex:1;padding:12px 5px;border-radius:8px;border:2px solid #6366f1;background:#1a1a2e;color:#6366f1;cursor:pointer;font-size:1rem;font-weight:bold;">
+                        2명
+                    </button>
+                    <button type="button" class="ai-count-btn selected" data-count="3" onclick="selectAICount(3)"
+                        style="flex:1;padding:12px 5px;border-radius:8px;border:2px solid #6366f1;background:#6366f1;color:white;cursor:pointer;font-size:1rem;font-weight:bold;">
+                        3명
+                    </button>
+                    <button type="button" class="ai-count-btn" data-count="4" onclick="selectAICount(4)"
+                        style="flex:1;padding:12px 5px;border-radius:8px;border:2px solid #6366f1;background:#1a1a2e;color:#6366f1;cursor:pointer;font-size:1rem;font-weight:bold;">
+                        4명
+                    </button>
+                </div>
             </div>
             <div class="input-group">
                 <label>AI 난이도</label>
@@ -1262,9 +1273,19 @@
             });
         }
 
+        let selectedAICount = 3; // 기본값 3명
+        function selectAICount(count) {
+            selectedAICount = count;
+            document.querySelectorAll('.ai-count-btn').forEach(btn => {
+                const isSelected = parseInt(btn.dataset.count) === count;
+                btn.style.backgroundColor = isSelected ? '#6366f1' : '#1a1a2e';
+                btn.style.color = isSelected ? 'white' : '#6366f1';
+            });
+        }
+
         function startSinglePlayer() {
             myNickname = document.getElementById('nickname-input').value.trim() || '플레이어';
-            const aiCount = parseInt(document.getElementById('ai-count-select').value);
+            const aiCount = selectedAICount;
 
             isSinglePlayer = true;
             myPlayerId = 'human';
