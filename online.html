@@ -707,16 +707,35 @@
 
         .action-buttons {
             display: none;
-            gap: 10px;
+            gap: 15px;
             position: fixed;
-            bottom: 180px;
-            left: 50%;
-            transform: translateX(-50%);
+            top: 50%;
+            right: 15px;
+            transform: translateY(-50%);
             z-index: 9999;
-            background: rgba(0, 0, 0, 0.9);
-            padding: 15px 25px;
-            border-radius: 15px;
-            flex-direction: row;
+            background: transparent;
+            flex-direction: column;
+        }
+
+        .action-buttons button {
+            padding: 15px 20px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            min-width: 100px;
+        }
+
+        .action-buttons button:first-child {
+            background: rgba(0, 50, 0, 0.8);
+            color: #4ade80;
+            border: 3px solid #4ade80;
+        }
+
+        .action-buttons button:last-child {
+            background: rgba(0, 30, 50, 0.8);
+            color: #38bdf8;
+            border: 3px solid #38bdf8;
         }
 
         /* 상대방 카드 (작게) */
@@ -850,7 +869,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.8.7</div>
+        <div class="version-badge">v2.8.8</div>
 
         <div id="main-menu">
             <div class="input-group">
