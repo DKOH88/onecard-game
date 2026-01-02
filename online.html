@@ -283,6 +283,15 @@
             max-width: 800px;
         }
 
+        /* 카드 세로 겹침 효과 */
+        .overlap-card {
+            margin-top: -25px !important;
+        }
+
+        .overlap-card:nth-child(-n+6) {
+            margin-top: 0 !important;
+        }
+
         .card {
             width: 53px !important;
             height: 74px !important;
@@ -845,7 +854,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.7.3</div>
+        <div class="version-badge">v2.7.4</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -1761,7 +1770,7 @@
                     // 내 카드 (앞면) - 라벨을 녹색 테두리 밖으로 이동
                     slotEl.innerHTML = `
                         <div class="player-area ${isCurrent ? 'current-turn' : ''}">
-                            <div class="cards-row" style="${p.hand.length > 6 ? 'flex-wrap:wrap;justify-content:center;height:auto;' : ''}">
+                            <div class="cards-row my-cards-wrap" style="${p.hand.length > 6 ? 'flex-wrap:wrap;justify-content:center;height:auto;gap:0 -20px;align-content:flex-start;margin-bottom:-30px;' : ''}">
                                 ${p.hand.map((card, i) => {
                         // 🚀 [개선] 선택된 카드가 있으면 같은 숫자 카드도 playable 표시
                         const firstSelectedCard = selectedCards.length > 0 ? p.hand[selectedCards[0]] : null;
@@ -1770,12 +1779,9 @@
                         const selected = selectedCards.includes(i);
                         const isNormalSuit = ['spade', 'heart', 'diamond', 'club'].includes(card.suit);
                         const valueClass = isNormalSuit ? `val-${card.value}` : '';
-                        // 7장 이상이고 7번째 카드부터는 위로 겹침 (position:relative + top:-30px)
-                        const isSecondRow = p.hand.length > 6 && i >= 6;
                         return `
-                                        <div class="card ${card.suit} ${valueClass} ${playable ? 'playable' : ''} ${selected ? 'selected' : ''}"
-                                             onclick="toggleCardSelection(${i})"
-                                             style="${isSecondRow ? 'position:relative;top:-30px;z-index:20;' : ''}">
+                                        <div class="card ${card.suit} ${valueClass} ${playable ? 'playable' : ''} ${selected ? 'selected' : ''} ${p.hand.length > 6 ? 'overlap-card' : ''}"
+                                             onclick="toggleCardSelection(${i})">
                                         </div>
                                     `;
                     }).join('')}
