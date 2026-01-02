@@ -871,7 +871,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.9.6</div>
+        <div class="version-badge">v2.9.7</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -2969,6 +2969,10 @@
 
         function endGameSingle() {
             renderSingle();
+
+            // 내 카드 영역 숨기기 (게임 종료 시 버튼과 겹침 방지)
+            const bottomSlot = document.getElementById('slot-bottom');
+            if (bottomSlot) bottomSlot.style.display = 'none';
             const sortedPlayers = [...players].sort((a, b) => {
                 if (a.rank !== null && b.rank !== null) return a.rank - b.rank;
                 if (a.rank !== null) return -1;
