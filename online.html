@@ -709,13 +709,14 @@
             display: none;
             gap: 10px;
             position: fixed;
-            bottom: 20px;
-            right: 20px;
+            bottom: 180px;
+            left: 50%;
+            transform: translateX(-50%);
             z-index: 9999;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 15px;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 15px 25px;
             border-radius: 15px;
-            flex-direction: column;
+            flex-direction: row;
         }
 
         /* 상대방 카드 (작게) */
@@ -849,7 +850,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.8.6</div>
+        <div class="version-badge">v2.8.7</div>
 
         <div id="main-menu">
             <div class="input-group">
