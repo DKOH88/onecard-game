@@ -709,31 +709,31 @@
             display: none;
             gap: 15px;
             position: fixed;
-            top: 50%;
-            right: 15px;
-            transform: translateY(-50%);
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
             z-index: 9999;
             background: transparent;
-            flex-direction: column;
+            flex-direction: row;
         }
 
         .action-buttons button {
-            padding: 15px 20px;
-            font-size: 1.1rem;
+            padding: 18px 35px;
+            font-size: 1.2rem;
             font-weight: bold;
             border-radius: 8px;
             cursor: pointer;
-            min-width: 100px;
+            min-width: 130px;
         }
 
         .action-buttons button:first-child {
-            background: rgba(0, 50, 0, 0.8);
-            color: #4ade80;
+            background: #166534;
+            color: white;
             border: 3px solid #4ade80;
         }
 
         .action-buttons button:last-child {
-            background: rgba(0, 30, 50, 0.8);
+            background: #1e3a5f;
             color: #38bdf8;
             border: 3px solid #38bdf8;
         }
@@ -869,7 +869,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.8.8</div>
+        <div class="version-badge">v2.8.9</div>
 
         <div id="main-menu">
             <div class="input-group">
