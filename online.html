@@ -854,7 +854,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.7.6</div>
+        <div class="version-badge">v2.7.7</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -1770,26 +1770,33 @@
                     // 내 카드 (앞면) - 라벨을 녹색 테두리 밖으로 이동
                     slotEl.innerHTML = `
                         <div class="player-area ${isCurrent ? 'current-turn' : ''}">
-                            <div class="cards-row" style="${p.hand.length > 6 ? 'flex-wrap:wrap;justify-content:center;' : ''}">
-                                ${p.hand.map((card, i) => {
-                        // 🚀 [개선] 선택된 카드가 있으면 같은 숫자 카드도 playable 표시
-                        const firstSelectedCard = selectedCards.length > 0 ? p.hand[selectedCards[0]] : null;
-                        const isSameValueAsSelected = firstSelectedCard && card.value === firstSelectedCard.value;
-                        const playable = isMyTurn && (canPlayCard(card) || isSameValueAsSelected);
-                        const selected = selectedCards.includes(i);
-                        const isNormalSuit = ['spade', 'heart', 'diamond', 'club'].includes(card.suit);
-                        const valueClass = isNormalSuit ? `val-${card.value}` : '';
-                        // 6장씩 한 줄, 2번째 줄부터 위로 겹침
-                        const rowNum = Math.floor(i / 6);
-                        const overlapStyle = rowNum > 0 ? 'margin-top:-30px;' : '';
-                        return `
-                                        <div class="card ${card.suit} ${valueClass} ${playable ? 'playable' : ''} ${selected ? 'selected' : ''}"
-                                             onclick="toggleCardSelection(${i})"
-                                             style="${overlapStyle}">
-                                        </div>
-                                    `;
-                    }).join('')}
-                            </div>
+                            ${(() => {
+                            const firstRow = p.hand.slice(0, 6);
+                            const secondRow = p.hand.slice(6);
+
+                            const renderCard = (card, i) => {
+                                const firstSelectedCard = selectedCards.length > 0 ? p.hand[selectedCards[0]] : null;
+                                const isSameValueAsSelected = firstSelectedCard && card.value === firstSelectedCard.value;
+                                const playable = isMyTurn && (canPlayCard(card) || isSameValueAsSelected);
+                                const selected = selectedCards.includes(i);
+                                const isNormalSuit = ['spade', 'heart', 'diamond', 'club'].includes(card.suit);
+                                const valueClass = isNormalSuit ? `val-${card.value}` : '';
+                                return `<div class="card ${card.suit} ${valueClass} ${playable ? 'playable' : ''} ${selected ? 'selected' : ''}"
+                                             onclick="toggleCardSelection(${i})"></div>`;
+                            };
+
+                            let html = '<div class="cards-row" style="justify-content:center;">';
+                            html += firstRow.map((card, i) => renderCard(card, i)).join('');
+                            html += '</div>';
+
+                            if (secondRow.length > 0) {
+                                html += '<div class="cards-row" style="justify-content:center;margin-top:-30px;">';
+                                html += secondRow.map((card, i) => renderCard(card, i + 6)).join('');
+                                html += '</div>';
+                            }
+
+                            return html;
+                        })()}
                         </div>
                             ${p.name} (나)
                             <span class="card-count ${p.hand.length === 1 ? 'warning' : ''}">${p.hand.length}장</span>
