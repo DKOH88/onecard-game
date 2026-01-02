@@ -811,7 +811,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.6.1</div>
+        <div class="version-badge">v2.6.2</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -1729,7 +1729,10 @@
                         <div class="player-area ${isCurrent ? 'current-turn' : ''}">
                             <div class="cards-row" style="${p.hand.length > 7 ? 'flex-wrap:wrap;justify-content:center;height:auto;' : ''}">
                                 ${p.hand.map((card, i) => {
-                        const playable = isMyTurn && canPlayCard(card);
+                        // 🚀 [개선] 선택된 카드가 있으면 같은 숫자 카드도 playable 표시
+                        const firstSelectedCard = selectedCards.length > 0 ? p.hand[selectedCards[0]] : null;
+                        const isSameValueAsSelected = firstSelectedCard && card.value === firstSelectedCard.value;
+                        const playable = isMyTurn && (canPlayCard(card) || isSameValueAsSelected);
                         const selected = selectedCards.includes(i);
                         const isNormalSuit = ['spade', 'heart', 'diamond', 'club'].includes(card.suit);
                         const valueClass = isNormalSuit ? `val-${card.value}` : '';
@@ -2091,7 +2094,10 @@
                         <div class="player-area ${isCurrent ? 'current-turn' : ''} ${p.isBankrupt ? 'bankrupt' : ''}">
                             <div class="cards-row">
                                 ${p.rank ? '' : p.hand.map((card, i) => {
-                        const playable = isCurrent && canPlayCardSingle(card);
+                        // 🚀 [개선] 선택된 카드가 있으면 같은 숫자 카드도 playable 표시
+                        const firstSelectedCard = selectedCards.length > 0 ? p.hand[selectedCards[0]] : null;
+                        const isSameValueAsSelected = firstSelectedCard && card.value === firstSelectedCard.value;
+                        const playable = isCurrent && (canPlayCardSingle(card) || isSameValueAsSelected);
                         const selected = selectedCards.includes(i);
                         const isNormalSuit = ['spade', 'heart', 'diamond', 'club'].includes(card.suit);
                         const valueClass = isNormalSuit ? `val-${card.value}` : '';
