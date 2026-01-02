@@ -845,7 +845,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v2.7.1</div>
+        <div class="version-badge">v2.7.2</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -1761,7 +1761,7 @@
                     // 내 카드 (앞면) - 라벨을 녹색 테두리 밖으로 이동
                     slotEl.innerHTML = `
                         <div class="player-area ${isCurrent ? 'current-turn' : ''}">
-                            <div class="cards-row" style="${p.hand.length > 6 ? 'flex-wrap:wrap;justify-content:center;height:auto;padding-bottom:35px;' : ''}">
+                            <div class="cards-row" style="${p.hand.length > 6 ? 'flex-wrap:wrap;justify-content:center;height:auto;padding-bottom:45px;' : ''}">
                                 ${p.hand.map((card, i) => {
                         // 🚀 [개선] 선택된 카드가 있으면 같은 숫자 카드도 playable 표시
                         const firstSelectedCard = selectedCards.length > 0 ? p.hand[selectedCards[0]] : null;
@@ -1774,7 +1774,7 @@
                         return `
                                         <div class="card ${card.suit} ${valueClass} ${playable ? 'playable' : ''} ${selected ? 'selected' : ''}"
                                              onclick="toggleCardSelection(${i})"
-                                             style="${p.hand.length > 6 ? 'margin-bottom:-35px;' : ''}">
+                                             style="${p.hand.length > 6 ? 'margin-bottom:-45px;' : ''}">
                                         </div>
                                     `;
                     }).join('')}
