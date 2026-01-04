@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>원카드 온라인 🃏</title>
+    <title>원카드 온라인 v2.9.8 🃏</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
 
     <!-- Firebase SDK -->
@@ -1338,6 +1338,7 @@
                 for (let i = 0; i < 5; i++) {
                     p.hand.push(singlePlayerState.deck.pop());
                 }
+                sortHand(p.hand); // 카드 정렬
             });
 
             // 첫 카드
@@ -1632,6 +1633,7 @@
                     for (let i = 0; i < 5; i++) {
                         hands[pid].push(deck.pop());
                     }
+                    sortHand(hands[pid]); // 카드 정렬
                 });
 
                 // 첫 카드 (특수 카드 제외)
@@ -1701,6 +1703,7 @@
                     for (let i = 0; i < 5; i++) {
                         hands[pid].push(deck.pop());
                     }
+                    sortHand(hands[pid]); // 카드 정렬
                 });
 
                 // 첫 카드
@@ -1770,6 +1773,36 @@
             return card.value === '2' || card.value === 'A' ||
                 card.value === 'J' || card.value === 'Q' || card.value === 'K' ||
                 card.suit === 'black-joker' || card.suit === 'color-joker';
+        }
+
+        // 카드 정렬 함수: 칼라조커 > 흑백조커 > A > K > Q > J > 10 > 9 > ... > 2
+        function sortHand(hand) {
+            const valueOrder = {
+                'JOKER': 100, // 조커 우선
+                'A': 14, 'K': 13, 'Q': 12, 'J': 11, '10': 10,
+                '9': 9, '8': 8, '7': 7, '6': 6, '5': 5, '4': 4, '3': 3, '2': 2
+            };
+
+            hand.sort((a, b) => {
+                // 1. 칼라조커 우선
+                if (a.suit === 'color-joker' && b.suit !== 'color-joker') return -1;
+                if (b.suit === 'color-joker' && a.suit !== 'color-joker') return 1;
+
+                // 2. 흑백조커
+                if (a.suit === 'black-joker' && b.suit !== 'black-joker') return -1;
+                if (b.suit === 'black-joker' && a.suit !== 'black-joker') return 1;
+
+                // 3. 값 비교 (A > K > Q > J > 10 > ... > 2)
+                const aVal = valueOrder[a.value] || 0;
+                const bVal = valueOrder[b.value] || 0;
+                if (aVal !== bVal) return bVal - aVal; // 내림차순
+
+                // 4. 같은 값이면 무늬 정렬 (스페이드 > 하트 > 다이아 > 클로버)
+                const suitOrder = { 'spade': 4, 'heart': 3, 'diamond': 2, 'club': 1 };
+                return (suitOrder[b.suit] || 0) - (suitOrder[a.suit] || 0);
+            });
+
+            return hand;
         }
 
         function showGameScreen() {
@@ -1920,6 +1953,10 @@
         }
 
         function showGameResult(winnerId, playersData) {
+            // 내 카드 영역 숨기기 (게임 종료 시 버튼과 겹침 방지)
+            const bottomSlot = document.getElementById('slot-bottom');
+            if (bottomSlot) bottomSlot.style.display = 'none';
+
             const winnerData = playersData[winnerId];
             const winnerName = winnerData ? winnerData.name : '승자';
             const isMe = winnerId === myPlayerId;
@@ -1941,11 +1978,11 @@
                     ⏳ 방장의 재시작을 기다리는 중...
                 </button>
                 ` : ''}
-                <button class="btn btn-primary" style="width:100%;margin-top:10px;background-color:#6b7280;" onclick="location.reload()">
+                <button class="btn btn-primary" style="width:100%;margin-top:10px;background-color:#6b7280;position:relative;z-index:9999;" onclick="location.reload()">
                     🚪 대기실로 나가기
                 </button>
                 ${isHost ? `
-                <button class="btn btn-primary" style="width:100%;margin-top:10px;" onclick="restartGame()">
+                <button class="btn btn-primary" style="width:100%;margin-top:10px;position:relative;z-index:9999;" onclick="restartGame()">
                     🔄 게임 재시작 (승자 선)
                 </button>
                 ` : ''}
@@ -2104,6 +2141,7 @@
                     playCardDrawSound(); // 소리 추가 (온라인)
                 }
             }
+            sortHand(newHand); // 카드 정렬
 
             // 다음 턴
             let nextPlayerIndex = (gameState.currentPlayerIndex + gameState.direction + players.length) % players.length;
@@ -2525,6 +2563,7 @@
                     if (player.isHuman) playCardDrawSound(); // 소리 추가
                 }
             }
+            sortHand(player.hand); // 카드 정렬
 
             if (singlePlayerState.attackStack > 0) {
                 // 조커 공격 후 카드를 먹으면 다음 사람은 아무 카드나 낼 수 있음
@@ -3306,6 +3345,7 @@
                 }
                 if (newDeck.length > 0) newHand.push(newDeck.pop());
             }
+            sortHand(newHand); // 카드 정렬
             let nextPlayerIndex = (gameState.currentPlayerIndex + gameState.direction + players.length) % players.length;
 
             // 조커 공격 후 카드를 먹으면 다음 사람은 아무 카드나 낼 수 있음
