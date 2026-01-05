@@ -1760,6 +1760,13 @@
                 });
 
                 roomRef.update(updates).catch(err => alert('재시작 오류: ' + err.message));
+
+                // 내 카드 영역 다시 표시 (showGameResult에서 숨겨진 경우)
+                const bottomSlot = document.getElementById('slot-bottom');
+                if (bottomSlot) bottomSlot.style.display = '';
+
+                // 선택된 카드 초기화
+                selectedCards = [];
             });
         }
 
@@ -1825,6 +1832,13 @@
         function showGameScreen() {
             document.getElementById('lobby-screen').classList.add('hidden');
             document.getElementById('game-screen').classList.remove('hidden');
+
+            // 내 카드 영역 다시 표시 (게임 종료 후 재시작 시)
+            const bottomSlot = document.getElementById('slot-bottom');
+            if (bottomSlot) bottomSlot.style.display = '';
+
+            // 선택된 카드 초기화
+            selectedCards = [];
         }
 
         // 게임 렌더링
