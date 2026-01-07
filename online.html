@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>원카드 온라인 v3.0.1 🃏</title>
+    <title>원카드 온라인 v3.0.2 🃏</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
 
     <!-- Firebase SDK -->
@@ -888,7 +888,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v3.0.1</div>
+        <div class="version-badge">v3.0.2</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -1740,6 +1740,7 @@
                 // 1. 게임 상태 초기화
                 updates['status'] = 'playing';
                 updates['gameState'] = {
+                    status: 'playing', // 상태 명시적 추가
                     deck: deck,
                     discardPile: [firstCard],
                     currentPlayerIndex: startPlayerIndex, // 승자부터 시작
@@ -1847,6 +1848,14 @@
 
             document.getElementById('direction').textContent = gameState.direction === 1 ? '⟳ 시계' : '⟲ 반시계';
             document.getElementById('deck-count').textContent = `남은 카드 수: ${gameState.deck.length}`;
+
+            // [버그 수정] 게임 중이면 내 카드 영역 확실히 표시 (재시작 시 사라짐 방지)
+            if (gameState.status === 'playing') {
+                const bottomSlot = document.getElementById('slot-bottom');
+                if (bottomSlot && bottomSlot.style.display === 'none') {
+                    bottomSlot.style.display = '';
+                }
+            }
 
             // 슬롯 초기화
             ['top', 'left', 'right', 'bottom', 'top-left', 'top-right'].forEach(slot => {
