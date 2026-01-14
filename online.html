@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>원카드 온라인 v3.0.2 🃏</title>
+    <title>원카드 온라인 v3.0.3 🃏</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
 
     <!-- Firebase SDK -->
@@ -1152,6 +1152,11 @@
         function playCardDrawSound() {
             // 스윽 (종이 넘기는 소리)
             try {
+                // AudioContext가 suspended 상태이면 resume
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+
                 const t = audioContext.currentTime;
                 const duration = 0.15; // 약간 더 짧게
 
