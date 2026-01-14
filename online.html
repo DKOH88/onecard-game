@@ -888,7 +888,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v3.0.2</div>
+        <div class="version-badge">v3.0.3</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -2166,6 +2166,11 @@
         }
 
         function drawCardOnline() {
+            // AudioContext 미리 resume (브라우저 정책 대응)
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+
             const currentPlayer = players[gameState.currentPlayerIndex];
             if (!currentPlayer || !currentPlayer.isMe) {
                 alert('당신의 턴이 아닙니다!');
