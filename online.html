@@ -2134,7 +2134,7 @@
 
         // 온라인 무늬 선택
 
-        function selectSuitOnlineOriginal(suit) {
+        function selectSuitOnline(suit) {
             document.getElementById('suit-selector').style.display = 'none';
 
             if (window.pendingUpdate) {
@@ -2165,7 +2165,7 @@
             }
         }
 
-        function drawCardOnlineOriginal() {
+        function drawCardOnline() {
             // AudioContext 미리 resume (브라우저 정책 대응)
             if (audioContext.state === 'suspended') {
                 audioContext.resume();
@@ -3423,6 +3423,9 @@
                     const newCard = newDeck.pop();
                     newCard.drawnAt = Date.now(); // 🆕 마킹
                     newHand.push(newCard);
+                    // 🔊 카드 뽑기 사운드 (AudioContext resume 포함)
+                    if (audioContext.state === 'suspended') audioContext.resume();
+                    playCardDrawSound();
                 }
             }
             sortHand(newHand); // 카드 정렬
