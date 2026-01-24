@@ -990,12 +990,7 @@
                 <span id="turn-text">대기 중...</span>
             </div>
             <!-- Controls added here -->
-            <div class="controls" style="display:flex;gap:5px;">
-                <button class="btn btn-secondary" onclick="showRules()"
-                    style="padding:5px 10px;font-size:0.9rem;">📖</button>
-                <button class="btn btn-danger" onclick="location.reload()" style="padding:5px 10px;font-size:0.9rem;">🔄
-                    나가기</button>
-            </div>
+
             <div class="direction-indicator" id="direction">⟳ 시계</div>
             <div>
                 <span id="deck-count">덱: 0</span>
@@ -1848,6 +1843,8 @@
         function showGameScreen() {
             document.getElementById('lobby-screen').classList.add('hidden');
             document.getElementById('game-screen').classList.remove('hidden');
+            // 게임 시작 시 스크롤 최하단 이동
+            setTimeout(() => window.scrollTo(0, document.body.scrollHeight), 100);
 
             // 내 카드 영역 다시 표시 (게임 종료 후 재시작 시)
             const bottomSlot = document.getElementById('slot-bottom');
