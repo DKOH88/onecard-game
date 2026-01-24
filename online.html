@@ -986,6 +986,15 @@
             <div>
                 <span id="turn-text">대기 중...</span>
             </div>
+            <!-- Controls added here -->
+            <div class="controls" style="display:flex;gap:5px;">
+                <button class="btn btn-secondary" onclick="showRules()"
+                    style="padding:5px 10px;font-size:0.9rem;">📖</button>
+                <button class="btn btn-secondary" onclick="showContact()" style="padding:5px 10px;font-size:0.9rem;">📞
+                    문의</button>
+                <button class="btn btn-danger" onclick="location.reload()" style="padding:5px 10px;font-size:0.9rem;">🔄
+                    나가기</button>
+            </div>
             <div class="direction-indicator" id="direction">⟳ 시계</div>
             <div>
                 <span id="deck-count">덱: 0</span>
@@ -3627,6 +3636,41 @@
         document.getElementById('nickname-input').addEventListener('input', function (e) {
             localStorage.setItem('onecard_nickname', e.target.value);
         });
+    </script>
+    <!-- Contact Modal -->
+    <div class="modal" id="contact-modal" onclick="closeContact(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h2>📧 문의 / 버그 제보</h2>
+            <form action="https://formspree.io/f/xbdgqaza" method="POST"
+                style="display:flex;flex-direction:column;gap:15px;text-align:left">
+                <div class="input-group">
+                    <label>이메일 (선택)</label>
+                    <input type="email" name="email" placeholder="답변을 원하시면 입력해주세요">
+                </div>
+                <div class="input-group">
+                    <label>내용</label>
+                    <textarea name="message" rows="5"
+                        style="width:100%;padding:10px;border-radius:10px;border:none;font-size:1rem;resize:vertical;font-family:'Noto Sans KR', sans-serif"
+                        placeholder="버그 내용이나 제휴 문의를 남겨주세요." required></textarea>
+                </div>
+                <button class="btn btn-primary" type="submit">보내기</button>
+            </form>
+            <button class="btn btn-secondary" onclick="closeContact(null, true)"
+                style="margin-top:10px;width:100%">닫기</button>
+        </div>
+    </div>
+
+    <script>
+        // ... (Existing script content is implicitly here, appending to end)
+        function showContact() {
+            document.getElementById('contact-modal').style.display = 'flex';
+        }
+
+        function closeContact(event, force) {
+            if (force || event.target.id === 'contact-modal') {
+                document.getElementById('contact-modal').style.display = 'none';
+            }
+        }
     </script>
 </body>
 
