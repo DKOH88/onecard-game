@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>원카드 🃏</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a472a 0%, #0d2818 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            color: white;
+            overflow-x: hidden;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 900px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px 20px;
+            border-radius: 15px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .direction-indicator {
+            font-size: 1.3rem;
+            padding: 5px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        /* Diamond Layout */
+        .game-table {
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+            height: 600px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .player-slot {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .player-slot.top {
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .player-slot.bottom {
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .player-slot.left {
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .player-slot.right {
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .player-slot.top .cards-row,
+        .player-slot.bottom .cards-row {
+            flex-direction: row;
+        }
+
+        .player-slot.left .cards-row,
+        .player-slot.right .cards-row {
+            flex-direction: column;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .player-slot.left .card,
+        .player-slot.right .card {
+            margin: 2px 0;
+        }
+
+        .player-area {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 10px 15px;
+            min-width: 120px;
+            transition: all 0.3s;
+        }
+
+        .player-area.current-turn {
+            box-shadow: 0 0 20px rgba(74, 222, 128, 0.6);
+            border: 2px solid #4ade80;
+        }
+
+        .player-area.bankrupt {
+            opacity: 0.3;
+            background: rgba(239, 68, 68, 0.3);
+        }
+
+        .player-label {
+            font-size: 0.95rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .card-count {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 2px 8px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+        }
+
+        .card-count.danger {
+            background: rgba(239, 68, 68, 0.6);
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .cards-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 3px;
+            justify-content: center;
+            max-width: 280px;
+        }
+
+        .card {
+            width: 45px;
+            height: 65px;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.15s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            font-size: 0.8rem;
+        }
+
+        .card:hover:not(.card-back):not(.disabled) {
+            transform: translateY(-10px) scale(1.05);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+            z-index: 10;
+        }
+
+        .card.selected {
+            transform: translateY(-12px) scale(1.08);
+            box-shadow: 0 0 12px 4px #fbbf24;
+            z-index: 20;
+        }
+
+        .card.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .card.playable {
+            box-shadow: 0 0 8px 2px gold;
+        }
+
+        .card-back {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            background-image: repeating-linear-gradient(45deg, transparent, transparent 6px,
+                    rgba(255, 255, 255, 0.1) 6px, rgba(255, 255, 255, 0.1) 12px);
+            cursor: default;
+            font-size: 1.2rem;
+        }
+
+        .card-back::after {
+            content: '🃏';
+        }
+
+        /* 개별 카드 이미지 - 공통 스타일 */
+        .card.spade,
+        .card.club,
+        .card.heart,
+        .card.diamond {
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            color: transparent;
+            text-shadow: none;
+        }
+
+        /* 스페이드 개별 이미지 */
+        .card.spade.val-A {
+            background-image: url('cards/spade/A.png');
+        }
+
+        .card.spade.val-2 {
+            background-image: url('cards/spade/2.png');
+        }
+
+        .card.spade.val-3 {
+            background-image: url('cards/spade/3.png');
+        }
+
+        .card.spade.val-4 {
+            background-image: url('cards/spade/4.png');
+        }
+
+        .card.spade.val-5 {
+            background-image: url('cards/spade/5.png');
+        }
+
+        .card.spade.val-6 {
+            background-image: url('cards/spade/6.png');
+        }
+
+        .card.spade.val-7 {
+            background-image: url('cards/spade/7.png');
+        }
+
+        .card.spade.val-8 {
+            background-image: url('cards/spade/8.png');
+        }
+
+        .card.spade.val-9 {
+            background-image: url('cards/spade/9.png');
+        }
+
+        .card.spade.val-10 {
+            background-image: url('cards/spade/10.png');
+        }
+
+        .card.spade.val-J {
+            background-image: url('cards/spade/J.png');
+        }
+
+        .card.spade.val-Q {
+            background-image: url('cards/spade/Q.png');
+        }
+
+        .card.spade.val-K {
+            background-image: url('cards/spade/K.png');
+        }
+
+        /* 클로버 개별 이미지 */
+        .card.club.val-A {
+            background-image: url('cards/club/A.png');
+        }
+
+        .card.club.val-2 {
+            background-image: url('cards/club/2.png');
+        }
+
+        .card.club.val-3 {
+            background-image: url('cards/club/3.png');
+        }
+
+        .card.club.val-4 {
+            background-image: url('cards/club/4.png');
+        }
+
+        .card.club.val-5 {
+            background-image: url('cards/club/5.png');
+        }
+
+        .card.club.val-6 {
+            background-image: url('cards/club/6.png');
+        }
+
+        .card.club.val-7 {
+            background-image: url('cards/club/7.png');
+        }
+
+        .card.club.val-8 {
+            background-image: url('cards/club/8.png');
+        }
+
+        .card.club.val-9 {
+            background-image: url('cards/club/9.png');
+        }
+
+        .card.club.val-10 {
+            background-image: url('cards/club/10.png');
+        }
+
+        .card.club.val-J {
+            background-image: url('cards/club/J.png');
+        }
+
+        .card.club.val-Q {
+            background-image: url('cards/club/Q.png');
+        }
+
+        .card.club.val-K {
+            background-image: url('cards/club/K.png');
+        }
+
+        /* 하트 개별 이미지 */
+        .card.heart.val-A {
+            background-image: url('cards/heart/A.png');
+        }
+
+        .card.heart.val-2 {
+            background-image: url('cards/heart/2.png');
+        }
+
+        .card.heart.val-3 {
+            background-image: url('cards/heart/3.png');
+        }
+
+        .card.heart.val-4 {
+            background-image: url('cards/heart/4.png');
+        }
+
+        .card.heart.val-5 {
+            background-image: url('cards/heart/5.png');
+        }
+
+        .card.heart.val-6 {
+            background-image: url('cards/heart/6.png');
+        }
+
+        .card.heart.val-7 {
+            background-image: url('cards/heart/7.png');
+        }
+
+        .card.heart.val-8 {
+            background-image: url('cards/heart/8.png');
+        }
+
+        .card.heart.val-9 {
+            background-image: url('cards/heart/9.png');
+        }
+
+        .card.heart.val-10 {
+            background-image: url('cards/heart/10.png');
+        }
+
+        .card.heart.val-J {
+            background-image: url('cards/heart/J.png');
+        }
+
+        .card.heart.val-Q {
+            background-image: url('cards/heart/Q.png');
+        }
+
+        .card.heart.val-K {
+            background-image: url('cards/heart/K.png');
+        }
+
+        /* 다이아몬드 개별 이미지 */
+        .card.diamond.val-A {
+            background-image: url('cards/diamond/A.png');
+        }
+
+        .card.diamond.val-2 {
+            background-image: url('cards/diamond/2.png');
+        }
+
+        .card.diamond.val-3 {
+            background-image: url('cards/diamond/3.png');
+        }
+
+        .card.diamond.val-4 {
+            background-image: url('cards/diamond/4.png');
+        }
+
+        .card.diamond.val-5 {
+            background-image: url('cards/diamond/5.png');
+        }
+
+        .card.diamond.val-6 {
+            background-image: url('cards/diamond/6.png');
+        }
+
+        .card.diamond.val-7 {
+            background-image: url('cards/diamond/7.png');
+        }
+
+        .card.diamond.val-8 {
+            background-image: url('cards/diamond/8.png');
+        }
+
+        .card.diamond.val-9 {
+            background-image: url('cards/diamond/9.png');
+        }
+
+        .card.diamond.val-10 {
+            background-image: url('cards/diamond/10.png');
+        }
+
+        .card.diamond.val-J {
+            background-image: url('cards/diamond/J.png');
+        }
+
+        .card.diamond.val-Q {
+            background-image: url('cards/diamond/Q.png');
+        }
+
+        .card.diamond.val-K {
+            background-image: url('cards/diamond/K.png');
+        }
+
+        /* 조커 */
+        .card.black-joker {
+            background: url('cards/black_joker.png') center/cover;
+            color: transparent;
+        }
+
+        .card.color-joker {
+            background: url('cards/color_joker.png') center/cover;
+            color: transparent;
+        }
+
+        .card .suit {
+            font-size: 1rem;
+        }
+
+        .card .value {
+            font-size: 0.85rem;
+        }
+
+        /* Center Area */
+        .center-area {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            gap: 25px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 20px;
+        }
+
+        .deck-pile,
+        .discard-pile {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .deck-pile .card {
+            cursor: pointer;
+            width: 55px;
+            height: 80px;
+        }
+
+        .deck-pile .card:hover {
+            transform: scale(1.05);
+        }
+
+        .pile-label {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .discard-pile .card {
+            cursor: default;
+            width: 60px;
+            height: 85px;
+        }
+
+        .discard-pile .card .suit {
+            font-size: 1.3rem;
+        }
+
+        .discard-pile .card .value {
+            font-size: 1.1rem;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4ade80, #22c55e);
+            color: #1a1a2e;
+        }
+
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(74, 222, 128, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #f87171, #ef4444);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .message {
+            text-align: center;
+            font-size: 1rem;
+            padding: 10px 20px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 10px;
+            margin-top: 10px;
+            max-width: 900px;
+        }
+
+        .message.attack {
+            background: rgba(239, 68, 68, 0.4);
+            border: 2px solid #ef4444;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: #1a472a;
+            padding: 25px;
+            border-radius: 20px;
+            max-width: 500px;
+            max-height: 85vh;
+            overflow-y: auto;
+            text-align: center;
+        }
+
+        .modal-content h2 {
+            margin-bottom: 20px;
+        }
+
+        .rules-list {
+            text-align: left;
+            line-height: 1.7;
+            font-size: 0.9rem;
+        }
+
+        .rules-list li {
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .setup-options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin: 20px 0;
+        }
+
+        .setup-option {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .setup-option select {
+            padding: 8px 12px;
+            font-size: 1rem;
+            border-radius: 8px;
+            border: none;
+        }
+
+        .suit-selector {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .suit-options {
+            display: flex;
+            gap: 12px;
+        }
+
+        .suit-option {
+            font-size: 2.5rem;
+            cursor: pointer;
+            padding: 12px 16px;
+            background: white;
+            border-radius: 10px;
+            transition: all 0.2s;
+        }
+
+        .suit-option:hover {
+            transform: scale(1.1);
+        }
+
+        .controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .bankrupt-badge {
+            background: #ef4444;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+        }
+
+        /* Bottom player (human) - larger cards */
+        .player-slot.bottom .card {
+            width: 55px;
+            height: 80px;
+        }
+
+        .player-slot.bottom .cards-row {
+            max-width: 500px;
+        }
+
+        .player-slot.bottom .card .suit {
+            font-size: 1.2rem;
+        }
+
+        .player-slot.bottom .card .value {
+            font-size: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🃏 원카드</h1>
+
+    <div class="game-header">
+        <span id="turn-text">게임을 시작하세요</span>
+        <span class="direction-indicator" id="direction">⟳ 시계</span>
+        <div class="controls">
+            <button class="btn btn-secondary" onclick="showRules()">📖</button>
+            <button class="btn btn-danger" onclick="showSetup()">🔄 새 게임</button>
+        </div>
+    </div>
+
+    <!-- Game Table (Diamond Layout) -->
+    <div class="game-table" id="game-table">
+        <!-- Players will be positioned around the table -->
+        <div class="player-slot top" id="slot-top"></div>
+        <div class="player-slot left" id="slot-left"></div>
+        <div class="player-slot right" id="slot-right"></div>
+        <div class="player-slot bottom" id="slot-bottom"></div>
+
+        <!-- Center -->
+        <div class="center-area">
+            <div class="deck-pile">
+                <div class="card card-back" onclick="drawCard()"></div>
+                <span class="pile-label" id="deck-count">덱: 54</span>
+            </div>
+            <div class="discard-pile">
+                <div id="discard-cards" style="display:flex;gap:5px;"></div>
+                <span class="pile-label">버림</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Message -->
+    <div class="message" id="message">새 게임을 시작하세요!</div>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons" id="action-buttons" style="display: none;">
+        <button class="btn btn-primary" onclick="playSelectedCards()">선택 카드 내기</button>
+        <button class="btn btn-secondary" onclick="clearSelection()">취소</button>
+    </div>
+
+    <!-- Setup Modal -->
+    <div class="modal" id="setup-modal">
+        <div class="modal-content">
+            <h2>🎮 게임 설정</h2>
+            <div class="setup-options">
+                <div class="setup-option">
+                    <span>플레이어 수</span>
+                    <select id="player-count">
+                        <option value="2">2명</option>
+                        <option value="3">3명</option>
+                        <option value="4" selected>4명</option>
+                    </select>
+                </div>
+                <div class="setup-option">
+                    <span>시작 카드</span>
+                    <select id="start-cards">
+                        <option value="5">5장</option>
+                        <option value="6" selected>6장</option>
+                    </select>
+                </div>
+            </div>
+            <button class="btn btn-primary" style="width:100%" onclick="startGame()">게임 시작!</button>
+        </div>
+    </div>
+
+    <!-- Rules Modal -->
+    <div class="modal" id="rules-modal" onclick="closeRules(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h2>📖 원카드 규칙</h2>
+            <ul class="rules-list">
+                <li>🎯 모든 카드를 먼저 내면 승리</li>
+                <li>🃏 같은 숫자/무늬 카드만 가능</li>
+                <li>🔢 같은 숫자 여러 장 동시 가능</li>
+                <li>⚔️ <b>2</b>: +2장 (2, 같은무늬A, 조커로 방어)</li>
+                <li>⚔️ <b>A</b>: +3장 (A, 조커로 방어)</li>
+                <li>🖤 <b>흑백조커</b>: +5장 (♠A, 조커로 방어)</li>
+                <li>🌈 <b>컬러조커</b>: +7장 (♠A, 조커로 방어)</li>
+                <li>👑 <b>K</b>: 2턴 스킵 (2장=4턴)</li>
+                <li>👸 <b>Q</b>: 방향 전환</li>
+                <li>🎭 <b>J</b>: 1턴 스킵</li>
+                <li>🔄 <b>7</b>: 무늬 변경</li>
+                <li>💀 15장 초과 시 파산!</li>
+            </ul>
+            <button class="btn btn-primary" onclick="closeRules()" style="margin-top:15px;width:100%">확인</button>
+        </div>
+    </div>
+
+    <!-- Winner Modal -->
+    <div class="modal" id="winner-modal">
+        <div class="modal-content">
+            <div style="font-size:4rem" id="winner-emoji">🏆</div>
+            <h2 id="winner-text">승리!</h2>
+            <button class="btn btn-primary" onclick="showSetup()" style="margin-top:15px">다시 하기</button>
+        </div>
+    </div>
+
+    <!-- Suit Selector -->
+    <div class="suit-selector" id="suit-selector">
+        <div style="text-align:center">
+            <h2 style="margin-bottom:15px">무늬 선택</h2>
+            <div class="suit-options">
+                <div class="suit-option" onclick="selectSuit('spade')">♠</div>
+                <div class="suit-option" onclick="selectSuit('heart')" style="color:#dc2626">♥</div>
+                <div class="suit-option" onclick="selectSuit('diamond')" style="color:#dc2626">♦</div>
+                <div class="suit-option" onclick="selectSuit('club')">♣</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        let deck = [];
+        let discardPile = [];
+        let players = [];
+        let currentPlayerIndex = 0;
+        let direction = 1;
+        let attackStack = 0;
+        let attackType = null;
+        let currentSuit = null;
+        let skipTurns = 0;
+        let selectedCards = [];
+
+        const suits = ['spade', 'heart', 'diamond', 'club'];
+        const suitSymbols = { spade: '♠', heart: '♥', diamond: '♦', club: '♣' };
+        const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+        const BANKRUPT_LIMIT = 15;
+
+        // Slot positions for different player counts
+        const slotPositions = {
+            2: { 0: 'top', 1: 'bottom' },
+            3: { 0: 'left', 1: 'top', 2: 'bottom' },
+            4: { 0: 'left', 1: 'top', 2: 'right', 3: 'bottom' }
+        };
+
+        function createDeck() {
+            const newDeck = [];
+            for (let suit of suits) {
+                for (let value of values) {
+                    newDeck.push({ suit, value });
+                }
+            }
+            newDeck.push({ suit: 'black-joker', value: 'JOKER' });
+            newDeck.push({ suit: 'color-joker', value: 'JOKER' });
+            return shuffle(newDeck);
+        }
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function showSetup() {
+            document.getElementById('winner-modal').style.display = 'none';
+            document.getElementById('setup-modal').style.display = 'flex';
+        }
+
+        function startGame() {
+            document.getElementById('setup-modal').style.display = 'none';
+
+            const playerCount = parseInt(document.getElementById('player-count').value);
+            const startCards = parseInt(document.getElementById('start-cards').value);
+
+            deck = createDeck();
+            discardPile = [];
+            players = [];
+            currentPlayerIndex = 0;
+            direction = 1;
+            attackStack = 0;
+            attackType = null;
+            skipTurns = 0;
+            selectedCards = [];
+
+            // Create players (human is always last)
+            const aiNames = ['🤖 AI-1', '🤖 AI-2', '🤖 AI-3'];
+            for (let i = 0; i < playerCount - 1; i++) {
+                players.push({
+                    id: i,
+                    name: aiNames[i],
+                    hand: [],
+                    isHuman: false,
+                    isBankrupt: false,
+                    rank: null,
+                    slot: slotPositions[playerCount][i]
+                });
+            }
+            players.push({
+                id: playerCount - 1,
+                name: '👤 나',
+                hand: [],
+                isHuman: true,
+                isBankrupt: false,
+                rank: null,
+                slot: 'bottom'
+            });
+
+            // Deal cards
+            for (let i = 0; i < startCards; i++) {
+                for (let p of players) {
+                    p.hand.push(deck.pop());
+                }
+            }
+
+            // First card
+            let firstCard;
+            do {
+                firstCard = deck.pop();
+                if (isSpecialCard(firstCard)) {
+                    deck.unshift(firstCard);
+                } else {
+                    break;
+                }
+            } while (true);
+            discardPile.push(firstCard);
+            currentSuit = firstCard.suit;
+
+            render();
+            setMessage('게임 시작! 당신의 턴입니다.');
+
+            if (!players[currentPlayerIndex].isHuman) {
+                setTimeout(aiTurn, 1000);
+            }
+        }
+
+        function isSpecialCard(card) {
+            return card.value === '2' || card.value === 'A' ||
+                card.value === 'J' || card.value === 'Q' || card.value === 'K' ||
+                card.suit === 'black-joker' || card.suit === 'color-joker';
+        }
+
+        function isAttackCard(card) {
+            return card.value === '2' || card.value === 'A' ||
+                card.suit === 'black-joker' || card.suit === 'color-joker';
+        }
+
+        function canDefendWith(card) {
+            if (!attackType) return true;
+
+            if (attackType === '2') {
+                if (card.value === '2') return true;
+                if (card.value === 'A' && card.suit === currentSuit) return true;
+                if (card.suit === 'black-joker' || card.suit === 'color-joker') return true;
+                return false;
+            }
+            if (attackType === 'A') {
+                if (card.value === 'A') return true;
+                if (card.suit === 'black-joker' || card.suit === 'color-joker') return true;
+                return false;
+            }
+            if (attackType === 'black-joker') {
+                if (card.value === 'A' && card.suit === 'spade') return true;
+                if (card.suit === 'black-joker' || card.suit === 'color-joker') return true;
+                return false;
+            }
+            if (attackType === 'color-joker') {
+                if (card.value === 'A' && card.suit === 'spade') return true;
+                if (card.suit === 'black-joker' || card.suit === 'color-joker') return true;
+                return false;
+            }
+            return false;
+        }
+
+        function canPlayCard(card) {
+            const topCard = discardPile[discardPile.length - 1];
+            if (attackStack > 0) return canDefendWith(card);
+            if (card.suit === 'black-joker' || card.suit === 'color-joker') return true;
+            return card.suit === currentSuit || card.value === topCard.value;
+        }
+
+        function toggleCardSelection(playerIdx, cardIdx) {
+            const player = players[playerIdx];
+            if (!player || !player.isHuman || player.isBankrupt) return;
+            if (currentPlayerIndex !== playerIdx) return;
+
+            const card = player.hand[cardIdx];
+            const selIdx = selectedCards.indexOf(cardIdx);
+
+            if (selIdx >= 0) {
+                // Deselect
+                selectedCards.splice(selIdx, 1);
+            } else {
+                if (selectedCards.length > 0) {
+                    // Adding more cards - only check if same value
+                    const firstCard = player.hand[selectedCards[0]];
+                    if (card.value !== firstCard.value) {
+                        setMessage('같은 숫자만 함께 낼 수 있습니다!');
+                        return;
+                    }
+                    // Same value - allow selection (no playable check needed)
+                    selectedCards.push(cardIdx);
+                } else {
+                    // First card - check if playable
+                    if (!canPlayCard(card)) {
+                        setMessage('이 카드는 낼 수 없습니다!');
+                        return;
+                    }
+                    selectedCards.push(cardIdx);
+                }
+            }
+            render();
+        }
+
+        function clearSelection() {
+            selectedCards = [];
+            render();
+        }
+
+        function playSelectedCards() {
+            if (selectedCards.length === 0) return;
+
+            const player = players.find(p => p.isHuman);
+            const cards = selectedCards.map(i => player.hand[i]);
+
+            selectedCards.sort((a, b) => b - a).forEach(i => {
+                player.hand.splice(i, 1);
+            });
+
+            cards.forEach(card => discardPile.push(card));
+
+            const lastCard = cards[cards.length - 1];
+            if (lastCard.suit !== 'black-joker' && lastCard.suit !== 'color-joker') {
+                currentSuit = lastCard.suit;
+            }
+
+            handleSpecialCards(cards);
+            selectedCards = [];
+
+            if (player.hand.length === 0) {
+                const currentRank = players.filter(p => p.rank !== null).length + 1;
+                player.rank = currentRank;
+                setMessage(`🎉 ${player.name}님이 ${currentRank}등으로 탈출했습니다!`);
+                render();
+
+                if (isGameOver()) {
+                    setTimeout(endGame, 1500);
+                } else {
+                    setTimeout(nextTurn, 1500);
+                }
+                return;
+            }
+
+            if (document.getElementById('suit-selector').style.display !== 'flex') {
+                nextTurn();
+            }
+        }
+
+        function handleSpecialCards(cards) {
+            const value = cards[0].value;
+            const count = cards.length;
+
+            if (value === '2') {
+                attackStack += 2 * count;
+                attackType = '2';
+                setMessage(`⚔️ +${2 * count}장! (누적: ${attackStack}장)`, 'attack');
+            } else if (value === 'A') {
+                attackStack += 3 * count;
+                attackType = 'A';
+                setMessage(`⚔️ +${3 * count}장! (누적: ${attackStack}장)`, 'attack');
+            } else if (cards[0].suit === 'black-joker') {
+                attackStack += 5 * count;
+                attackType = 'black-joker';
+                setMessage(`🖤 +${5 * count}장! (누적: ${attackStack}장)`, 'attack');
+            } else if (cards[0].suit === 'color-joker') {
+                attackStack += 7 * count;
+                attackType = 'color-joker';
+                setMessage(`🌈 +${7 * count}장! (누적: ${attackStack}장)`, 'attack');
+            } else if (value === 'K') {
+                skipTurns += 2 * count;
+                setMessage(`👑 ${2 * count}턴 스킵!`);
+            } else if (value === 'Q') {
+                if (count % 2 === 1) {
+                    direction *= -1;
+                    setMessage(`👸 방향 전환! ${direction === 1 ? '⟳' : '⟲'}`);
+                }
+            } else if (value === 'J') {
+                skipTurns += 1 * count;
+                setMessage(`🎭 ${count}턴 스킵!`);
+            } else if (value === '7') {
+                if (players[currentPlayerIndex].isHuman) {
+                    document.getElementById('suit-selector').style.display = 'flex';
+                }
+            }
+        }
+
+        function selectSuit(suit) {
+            currentSuit = suit;
+            document.getElementById('suit-selector').style.display = 'none';
+            setMessage(`♻️ ${suitSymbols[suit]} 선택!`);
+            nextTurn();
+        }
+
+        function drawCard() {
+            const player = players.find(p => p.isHuman);
+            if (!player || player.isBankrupt) return;
+            if (currentPlayerIndex !== players.indexOf(player)) return;
+            drawCardsForPlayer(player);
+            nextTurn();
+        }
+
+        function drawCardsForPlayer(player) {
+            const count = attackStack > 0 ? attackStack : 1;
+
+            for (let i = 0; i < count; i++) {
+                if (deck.length === 0) reshuffleDeck();
+                if (deck.length > 0) player.hand.push(deck.pop());
+            }
+
+            if (attackStack > 0) {
+                setMessage(`💥 ${player.name} ${attackStack}장 뽑음!`);
+                attackStack = 0;
+                attackType = null;
+            } else {
+                setMessage(`📥 ${player.name} 1장 뽑음`);
+            }
+
+            if (player.hand.length > BANKRUPT_LIMIT) {
+                player.isBankrupt = true;
+                deck.push(...player.hand);
+                player.hand = [];
+                deck = shuffle(deck);
+                setMessage(`💀 ${player.name} 파산!`, 'attack');
+            }
+        }
+
+        function reshuffleDeck() {
+            if (discardPile.length <= 1) return;
+            const topCard = discardPile.pop();
+            deck = shuffle(discardPile);
+            discardPile = [topCard];
+        }
+
+        function isGameOver() {
+            const remaining = players.filter(p => !p.isBankrupt && p.rank === null);
+            return remaining.length <= 1;
+        }
+
+        function nextTurn() {
+            const activePlayers = players.filter(p => !p.isBankrupt && p.rank === null);
+
+            if (activePlayers.length <= 1) {
+                if (activePlayers.length === 1 && activePlayers[0].rank === null) {
+                    const nextRank = players.filter(p => p.rank !== null).length + 1;
+                    activePlayers[0].rank = nextRank;
+                }
+                endGame();
+                return;
+            }
+
+            while (skipTurns > 0) {
+                currentPlayerIndex = (currentPlayerIndex + direction + players.length) % players.length;
+                while (players[currentPlayerIndex].isBankrupt || players[currentPlayerIndex].rank !== null) {
+                    currentPlayerIndex = (currentPlayerIndex + direction + players.length) % players.length;
+                }
+                skipTurns--;
+            }
+
+            currentPlayerIndex = (currentPlayerIndex + direction + players.length) % players.length;
+
+            let safety = 0;
+            while ((players[currentPlayerIndex].isBankrupt || players[currentPlayerIndex].rank !== null) && safety < players.length) {
+                currentPlayerIndex = (currentPlayerIndex + direction + players.length) % players.length;
+                safety++;
+            }
+
+            if (isGameOver()) {
+                const survivor = players.find(p => !p.isBankrupt && p.rank === null);
+                if (survivor) survivor.rank = players.filter(p => p.rank !== null).length + 1;
+                endGame();
+                return;
+            }
+
+            render();
+
+            const cp = players[currentPlayerIndex];
+            if (cp.isHuman) {
+                if (attackStack > 0) {
+                    setMessage(`⚔️ ${attackStack}장 공격! 방어 또는 뽑기`, 'attack');
+                } else {
+                    setMessage('당신의 턴');
+                }
+            } else {
+                // Random delay 1-3 seconds
+                const delay = 1000 + Math.random() * 2000;
+                setTimeout(aiTurn, delay);
+            }
+        }
+
+        function aiTurn() {
+            const player = players[currentPlayerIndex];
+            if (player.isBankrupt || player.isHuman) return;
+
+            let playable = [];
+            for (let i = 0; i < player.hand.length; i++) {
+                if (canPlayCard(player.hand[i])) {
+                    playable.push({ index: i, card: player.hand[i] });
+                }
+            }
+
+            if (playable.length === 0) {
+                drawCardsForPlayer(player);
+                nextTurn();
+                return;
+            }
+
+            const groups = {};
+            playable.forEach(pc => {
+                const val = pc.card.value;
+                if (!groups[val]) groups[val] = [];
+                groups[val].push(pc);
+            });
+
+            let bestGroup = null;
+            for (let val in groups) {
+                if (!bestGroup || groups[val].length > bestGroup.length) {
+                    bestGroup = groups[val];
+                }
+            }
+
+            const indices = bestGroup.map(pc => pc.index).sort((a, b) => b - a);
+            const cards = indices.map(i => player.hand[i]);
+
+            indices.forEach(i => player.hand.splice(i, 1));
+            cards.forEach(card => discardPile.push(card));
+
+            const lastCard = cards[cards.length - 1];
+            if (lastCard.suit !== 'black-joker' && lastCard.suit !== 'color-joker') {
+                currentSuit = lastCard.suit;
+            }
+
+            if (lastCard.value === '7') {
+                const suitCounts = {};
+                player.hand.forEach(c => {
+                    if (c.suit !== 'black-joker' && c.suit !== 'color-joker') {
+                        suitCounts[c.suit] = (suitCounts[c.suit] || 0) + 1;
+                    }
+                });
+                let best = currentSuit, max = 0;
+                for (let s in suitCounts) {
+                    if (suitCounts[s] > max) { max = suitCounts[s]; best = s; }
+                }
+                currentSuit = best;
+            }
+
+            handleSpecialCards(cards);
+
+            if (player.hand.length === 0) {
+                const currentRank = players.filter(p => p.rank !== null).length + 1;
+                player.rank = currentRank;
+                setMessage(`🎊 ${player.name}님이 ${currentRank}등으로 탈출했습니다!`);
+                render();
+
+                if (isGameOver()) {
+                    setTimeout(endGame, 1500);
+                } else {
+                    setTimeout(nextTurn, 1500);
+                }
+                return;
+            }
+
+            nextTurn();
+        }
+
+        function endGame() {
+            render();
+            const modal = document.getElementById('winner-modal');
+            const winnerText = document.getElementById('winner-text');
+            const winnerEmoji = document.getElementById('winner-emoji');
+
+            const sortedPlayers = [...players].sort((a, b) => {
+                if (a.rank !== null && b.rank !== null) return a.rank - b.rank;
+                if (a.rank !== null) return -1;
+                if (b.rank !== null) return 1;
+                return 0;
+            });
+
+            let rankHtml = '<div style="margin-top:20px; text-align:left;">';
+            sortedPlayers.forEach(p => {
+                let status = p.rank ? `${p.rank}등` : (p.isBankrupt ? '파산' : '진행중');
+                let color = p.rank === 1 ? '#fbbf24' : (p.isBankrupt ? '#f87171' : 'white');
+                rankHtml += `<div style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.1); color:${color}">
+                    <span style="font-weight:bold; width:30px; display:inline-block;">${status}</span>
+                    <span>${p.name}</span>
+                </div>`;
+            });
+            rankHtml += '</div>';
+
+            const humanRank = players.find(p => p.isHuman).rank;
+            winnerText.innerHTML = humanRank === 1 ? '🎉 우승!' : '🎮 게임 종료';
+            winnerEmoji.textContent = humanRank === 1 ? '🏆' : '🏁';
+
+            // Add rankings to modal
+            const content = modal.querySelector('.modal-content');
+            const existingRank = content.querySelector('.final-rankings');
+            if (existingRank) existingRank.remove();
+
+            const rankDiv = document.createElement('div');
+            rankDiv.className = 'final-rankings';
+            rankDiv.innerHTML = rankHtml;
+            content.insertBefore(rankDiv, content.querySelector('button'));
+
+            modal.style.display = 'flex';
+        }
+
+        function render() {
+            document.getElementById('direction').textContent = direction === 1 ? '⟳ 시계' : '⟲ 반시계';
+
+            // Clear all slots
+            ['top', 'left', 'right', 'bottom'].forEach(slot => {
+                document.getElementById('slot-' + slot).innerHTML = '';
+            });
+
+            // Render each player in their slot
+            players.forEach((p, idx) => {
+                const slotEl = document.getElementById('slot-' + p.slot);
+                const isCurrent = currentPlayerIndex === idx;
+                const countClass = p.hand.length > 12 ? 'danger' : '';
+
+                if (p.isHuman) {
+                    // Human player - show cards face up
+                    slotEl.innerHTML = `
+                        <div class="player-area ${isCurrent ? 'current-turn' : ''} ${p.isBankrupt ? 'bankrupt' : ''}">
+                            <div class="player-label">
+                                ${p.name}
+                                <span class="card-count ${countClass}">${p.hand.length}장</span>
+                                ${p.isBankrupt ? '<span class="bankrupt-badge">파산</span>' : ''}
+                                ${p.rank ? `<span class="bankrupt-badge" style="background:#4ade80">${p.rank}등 탈출</span>` : ''}
+                            </div>
+                            <div class="cards-row">
+                                ${p.rank ? '' : p.hand.map((card, i) => {
+                        const playable = isCurrent && canPlayCard(card);
+                        const selected = selectedCards.includes(i);
+                        const isSpadeAce = card.suit === 'spade' && card.value === 'A';
+                        const isJoker = card.suit === 'black-joker' || card.suit === 'color-joker';
+                        const isNormalSuit = ['spade', 'heart', 'diamond', 'club'].includes(card.suit);
+                        const cardClass = isSpadeAce ? 'spade-ace' : card.suit;
+                        const valueClass = isNormalSuit && !isSpadeAce ? `val-${card.value}` : '';
+                        const symbol = isJoker || isNormalSuit ? '' : suitSymbols[card.suit];
+                        const val = card.value === 'JOKER' || isNormalSuit ? '' : card.value;
+                        return `
+                                        <div class="card ${cardClass} ${valueClass} ${playable ? 'playable' : ''} ${selected ? 'selected' : ''} ${!isCurrent ? 'disabled' : ''}"
+                                             onclick="toggleCardSelection(${idx}, ${i})">
+                                            <span class="value">${val}</span>
+                                            <span class="suit">${symbol}</span>
+                                        </div>
+                                    `;
+                    }).join('')}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // AI player - show cards face down
+                    slotEl.innerHTML = `
+                        <div class="player-area ${isCurrent ? 'current-turn' : ''} ${p.isBankrupt ? 'bankrupt' : ''}">
+                            <div class="player-label">
+                                ${p.name}
+                                <span class="card-count ${countClass}">${p.hand.length}장</span>
+                                ${p.isBankrupt ? '<span class="bankrupt-badge">파산</span>' : ''}
+                                ${p.rank ? `<span class="bankrupt-badge" style="background:#4ade80">${p.rank}등 탈출</span>` : ''}
+                            </div>
+                            <div class="cards-row">
+                                ${p.isBankrupt || p.rank ? '' : p.hand.map(() => '<div class="card card-back"></div>').join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+
+            // Show last 3 cards in discard pile
+            const discardEl = document.getElementById('discard-cards');
+            const recentCards = discardPile.slice(-3);
+            discardEl.innerHTML = recentCards.map((card, idx) => {
+                const isSpadeAce = card.suit === 'spade' && card.value === 'A';
+                const isJoker = card.suit === 'black-joker' || card.suit === 'color-joker';
+                const isNormalSuit = ['spade', 'heart', 'diamond', 'club'].includes(card.suit);
+                const cardClass = isSpadeAce ? 'spade-ace' : card.suit;
+                const valueClass = isNormalSuit && !isSpadeAce ? `val-${card.value}` : '';
+                const symbol = isJoker || isNormalSuit ? '' : suitSymbols[card.suit];
+                const val = card.value === 'JOKER' || isNormalSuit ? '' : card.value;
+                const isTop = idx === recentCards.length - 1;
+                const opacity = isTop ? '1' : (idx === recentCards.length - 2 ? '0.7' : '0.4');
+                return `
+                    <div class="card ${cardClass} ${valueClass}" style="width:${isTop ? 60 : 45}px;height:${isTop ? 85 : 65}px;opacity:${opacity};cursor:default;">
+                        <span class="value" style="font-size:${isTop ? '1.1rem' : '0.8rem'}">${val}</span>
+                        <span class="suit" style="font-size:${isTop ? '1.3rem' : '0.9rem'}">${symbol}</span>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('deck-count').textContent = `덱: ${deck.length}`;
+            document.getElementById('turn-text').textContent = players[currentPlayerIndex] ?
+                `${players[currentPlayerIndex].name}의 턴` : '';
+            document.getElementById('action-buttons').style.display = selectedCards.length > 0 ? 'flex' : 'none';
+        }
+
+        function setMessage(text, type = '') {
+            const el = document.getElementById('message');
+            el.textContent = text;
+            el.className = 'message' + (type ? ` ${type}` : '');
+        }
+
+        function showRules() { document.getElementById('rules-modal').style.display = 'flex'; }
+        function closeRules(e) { if (!e || e.target.id === 'rules-modal') document.getElementById('rules-modal').style.display = 'none'; }
+
+        showSetup();
+    </script>
+</body>
+
+</html>
