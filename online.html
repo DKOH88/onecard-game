@@ -3638,38 +3638,25 @@
             localStorage.setItem('onecard_nickname', e.target.value);
         });
     </script>
-    <!-- Contact Modal -->
-    <div class="modal" id="contact-modal" onclick="closeContact(event)">
-        <div class="modal-content" onclick="event.stopPropagation()">
-            <h2>📧 문의 / 버그 제보</h2>
-            <form action="https://formspree.io/f/xbdgqaza" method="POST"
-                style="display:flex;flex-direction:column;gap:15px;text-align:left">
-                <div class="input-group">
-                    <label>이메일 (선택)</label>
-                    <input type="email" name="email" placeholder="답변을 원하시면 입력해주세요">
-                </div>
-                <div class="input-group">
-                    <label>내용</label>
-                    <textarea name="message" rows="5"
-                        style="width:100%;padding:10px;border-radius:10px;border:none;font-size:1rem;resize:vertical;font-family:'Noto Sans KR', sans-serif"
-                        placeholder="버그 내용이나 제휴 문의를 남겨주세요." required></textarea>
-                </div>
-                <button class="btn btn-primary" type="submit">보내기</button>
-            </form>
-            <button class="btn btn-secondary" onclick="closeContact(null, true)"
-                style="margin-top:10px;width:100%">닫기</button>
-        </div>
-    </div>
-
     <script>
-        // ... (Existing script content is implicitly here, appending to end)
         function showContact() {
-            document.getElementById('contact-modal').style.display = 'flex';
-        }
-
-        function closeContact(event, force) {
-            if (force || event.target.id === 'contact-modal') {
-                document.getElementById('contact-modal').style.display = 'none';
+            const msg = prompt("문의 내용이나 버그를 입력해주세요.");
+            if (msg && msg.trim()) {
+                fetch("https://formspree.io/f/xbdgqaza", {
+                    method: "POST",
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: msg })
+                })
+                    .then(response => {
+                        if (response.ok) {
+                            alert("소중한 의견 감사합니다!");
+                        } else {
+                            alert("전송에 실패했습니다. 잠시 후 다시 시도해주세요.");
+                        }
+                    })
+                    .catch(error => {
+                        alert("전송 중 오류가 발생했습니다.");
+                    });
             }
         }
     </script>
