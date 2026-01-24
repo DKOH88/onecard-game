@@ -915,6 +915,48 @@
             font-size: 1.2rem;
         }
 
+        .rule-section {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            text-align: left;
+        }
+
+        .rule-section h4 {
+            color: #4ade80;
+            margin-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 5px;
+        }
+
+        .rule-section ul {
+            padding-left: 20px;
+            margin: 0;
+        }
+
+        .rule-section li {
+            margin-bottom: 4px;
+            font-size: 0.9rem;
+        }
+
+        .tip {
+            font-size: 0.8rem;
+            color: #9ca3af;
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        .bad {
+            color: #f87171;
+            font-weight: bold;
+        }
+
+        .good {
+            color: #60a5fa;
+            font-weight: bold;
+        }
+
         @keyframes modalPop {
             from {
                 transform: scale(0.9);
@@ -950,6 +992,8 @@
             <p style="text-align:center; margin: 20px 0 5px; font-weight:bold; color:#fbbf24;">싱글 플레이어</p>
             <button class="btn" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#000;"
                 onclick="showSinglePlayerForm()">🤖 AI와 대전</button>
+            <button class="btn" onclick="showRules()" style="background:linear-gradient(135deg, #10b981, #059669);">📖
+                게임 방법 & 규칙</button>
 
             <button class="btn btn-secondary" onclick="showContact()"
                 style="margin-top:10px; background:linear-gradient(135deg, #6b7280, #4b5563);">📞 문의 / 버그 제보</button>
@@ -3705,6 +3749,44 @@
         </div>
     </div>
 
+    <!-- Rules Modal -->
+    <div class="modal" id="rules-modal" onclick="closeRules(event)">
+        <div class="modal-content" onclick="event.stopPropagation()"
+            style="text-align:left;max-width:600px;max-height:80vh;overflow-y:auto;">
+            <h3 style="text-align:center;margin-bottom:20px;">📖 게임 방법 & 규칙</h3>
+
+            <div class="rule-section">
+                <h4>🎯 기본 규칙</h4>
+                <p>• 카드를 모두 털어내는 사람이 승리합니다.</p>
+                <p>• 같은 <strong>무늬</strong> 또는 같은 <strong>숫자</strong>의 카드를 낼 수 있습니다.</p>
+                <p>• 카드가 <strong>15장 이상</strong> 되면 <strong>파산</strong>하여 패배합니다.</p>
+            </div>
+
+            <div class="rule-section">
+                <h4>⚔️ 공격 카드 (방어 필수)</h4>
+                <ul>
+                    <li><span class="bad">🃏 컬러 조커</span> : <strong>7장</strong> 공격 (최강)</li>
+                    <li><span class="bad">🃏 흑백 조커</span> : <strong>5장</strong> 공격</li>
+                    <li><span class="bad">🅰️ A 카드</span> : <strong>3장</strong> 공격</li>
+                    <li><span class="bad">2️⃣ 2 카드</span> : <strong>2장</strong> 공격</li>
+                </ul>
+                <p class="tip">※ 방어 상성: 2 < A < ♠A < 흑백조커 < 컬러조커<br>(스페이드 A는 조커를 방어할 수 있는 유일한 일반 카드!)</p>
+            </div>
+
+            <div class="rule-section">
+                <h4>✨ 특수 카드</h4>
+                <ul>
+                    <li><span class="good">7️⃣ 7 카드</span> : 원하는 <strong>무늬로 변경</strong>합니다.</li>
+                    <li><span class="good">👑 K 카드</span> : 한 번에 <strong>2명</strong>을 건너뜁니다. (3인 이상 시)</li>
+                    <li><span class="good">👸 Q 카드</span> : 진행 <strong>방향을 반대</strong>로 바꿉니다.</li>
+                    <li><span class="good">🤡 J 카드</span> : 다음 사람을 <strong>건너뜁니다</strong>. (점프)</li>
+                </ul>
+            </div>
+
+            <button class="btn btn-secondary" onclick="closeRules(null, true)" style="margin-top:20px;">닫기</button>
+        </div>
+    </div>
+
     <script>
         function showContact() {
             document.getElementById('contact-modal').style.display = 'flex';
@@ -3713,6 +3795,16 @@
         function closeContact(event, force) {
             if (force || event.target.id === 'contact-modal') {
                 document.getElementById('contact-modal').style.display = 'none';
+            }
+        }
+
+        function showRules() {
+            document.getElementById('rules-modal').style.display = 'flex';
+        }
+
+        function closeRules(event, force) {
+            if (force || event.target.id === 'rules-modal') {
+                document.getElementById('rules-modal').style.display = 'none';
             }
         }
     </script>
