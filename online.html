@@ -3638,25 +3638,37 @@
             localStorage.setItem('onecard_nickname', e.target.value);
         });
     </script>
+    <!-- Contact Modal -->
+    <div class="modal" id="contact-modal" onclick="closeContact(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h3 style="margin-bottom:15px;line-height:1.4">제휴 문의나 버그 제보를 해주시면<br>감사하겠습니다.</h3>
+            <form action="https://formspree.io/f/xbdgqaza" method="POST"
+                style="display:flex;flex-direction:column;gap:15px;text-align:left">
+                <div class="input-group">
+                    <label>답변 받을 이메일 주소</label>
+                    <input type="email" name="email" required placeholder="example@email.com">
+                </div>
+                <div class="input-group">
+                    <label>문의내용</label>
+                    <textarea name="message" rows="5"
+                        style="width:100%;padding:10px;border-radius:10px;border:none;font-size:1rem;resize:vertical;font-family:'Noto Sans KR', sans-serif"
+                        required></textarea>
+                </div>
+                <button class="btn btn-primary" type="submit">보내기</button>
+            </form>
+            <button class="btn btn-secondary" onclick="closeContact(null, true)"
+                style="margin-top:10px;width:100%">닫기</button>
+        </div>
+    </div>
+
     <script>
         function showContact() {
-            const msg = prompt("문의 내용이나 버그를 입력해주세요.");
-            if (msg && msg.trim()) {
-                fetch("https://formspree.io/f/xbdgqaza", {
-                    method: "POST",
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: msg })
-                })
-                    .then(response => {
-                        if (response.ok) {
-                            alert("소중한 의견 감사합니다!");
-                        } else {
-                            alert("전송에 실패했습니다. 잠시 후 다시 시도해주세요.");
-                        }
-                    })
-                    .catch(error => {
-                        alert("전송 중 오류가 발생했습니다.");
-                    });
+            document.getElementById('contact-modal').style.display = 'flex';
+        }
+
+        function closeContact(event, force) {
+            if (force || event.target.id === 'contact-modal') {
+                document.getElementById('contact-modal').style.display = 'none';
             }
         }
     </script>
