@@ -1522,11 +1522,13 @@
 
         function createRoom() {
             console.log('createRoom called');
-            myNickname = document.getElementById('nickname-input').value.trim();
-            if (!myNickname) {
+            const nick = document.getElementById('nickname-input').value.trim();
+            if (!nick) {
                 alert('닉네임을 입력해주세요!');
                 return;
             }
+            // 전역 변수 업데이트
+            myNickname = nick;
 
             if (!firebase.auth().currentUser) {
                 console.log('createRoom: No authenticated user');
@@ -1562,13 +1564,15 @@
         }
 
         function joinRoom() {
-            myNickname = document.getElementById('nickname-input').value.trim();
+            const nick = document.getElementById('nickname-input').value.trim();
             const roomCode = document.getElementById('room-code-input').value.trim().toUpperCase();
 
-            if (!myNickname) {
+            if (!nick) {
                 alert('닉네임을 입력해주세요!');
                 return;
             }
+            // 전역 변수 업데이트
+            myNickname = nick;
             if (!roomCode || roomCode.length !== 4) {
                 alert('올바른 4자리 숫자를 입력해주세요!');
                 return;
