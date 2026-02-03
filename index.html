@@ -1512,7 +1512,16 @@
             document.getElementById('main-menu').classList.remove('hidden');
         }
 
+        function generatePlayerId() {
+            return 'player_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        function generateRoomCode() {
+            return Math.floor(1000 + Math.random() * 9000).toString();
+        }
+
         function createRoom() {
+            console.log('createRoom called');
             myNickname = document.getElementById('nickname-input').value.trim();
             if (!myNickname) {
                 alert('닉네임을 입력해주세요!');
@@ -1520,9 +1529,11 @@
             }
 
             if (!firebase.auth().currentUser) {
+                console.log('createRoom: No authenticated user');
                 alert('서버 연결 중입니다. 잠시 후 다시 시도해주세요. (인증 대기)');
                 return;
             }
+            console.log('createRoom: Auth check passed', firebase.auth().currentUser.uid);
 
             myPlayerId = generatePlayerId();
             currentRoomCode = generateRoomCode();
