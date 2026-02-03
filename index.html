@@ -1527,8 +1527,9 @@
                 alert('닉네임을 입력해주세요!');
                 return;
             }
-            // 전역 변수 업데이트
-            myNickname = nick;
+            // 전역 변수 업데이트 (TDZ 방지 위해 window 속성도 설정)
+            window.myNickname = nick;
+            try { myNickname = nick; } catch (e) { console.warn('myNickname update failed', e); }
 
             if (!firebase.auth().currentUser) {
                 console.log('createRoom: No authenticated user');
@@ -1549,7 +1550,7 @@
                 createdAt: Date.now(),
                 players: {
                     [myPlayerId]: {
-                        name: myNickname,
+                        name: nick, // 지역 변수 사용
                         connected: true,
                         joinedAt: Date.now()
                     }
@@ -1572,7 +1573,9 @@
                 return;
             }
             // 전역 변수 업데이트
-            myNickname = nick;
+            window.myNickname = nick;
+            try { myNickname = nick; } catch (e) { console.warn('myNickname update failed', e); }
+
             if (!roomCode || roomCode.length !== 4) {
                 alert('올바른 4자리 숫자를 입력해주세요!');
                 return;
@@ -1607,7 +1610,7 @@
 
                 isHost = false;
                 roomRef.child('players/' + myPlayerId).set({
-                    name: myNickname,
+                    name: nick, // 지역 변수 사용
                     connected: true,
                     joinedAt: Date.now()
                 }).then(() => {
