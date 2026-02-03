@@ -13,6 +13,7 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
     <style>
         * {
@@ -1131,6 +1132,17 @@
         };
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
+        const auth = firebase.auth();
+
+        // 익명 로그인 자동 수행 (DB 권한 해결용)
+        auth.signInAnonymously()
+            .then(() => {
+                console.log('Firebase Auth: Signed in anonymously');
+            })
+            .catch((error) => {
+                console.error('Firebase Auth Error:', error);
+                alert('서버 인증 실패: ' + error.message);
+            });
 
         // 게임 상태
         let myPlayerId = null;
@@ -1507,6 +1519,11 @@
                 return;
             }
 
+            if (!firebase.auth().currentUser) {
+                alert('서버 연결 중입니다. 잠시 후 다시 시도해주세요. (인증 대기)');
+                return;
+            }
+
             myPlayerId = generatePlayerId();
             currentRoomCode = generateRoomCode();
             isHost = true;
@@ -1543,6 +1560,11 @@
             }
             if (!roomCode || roomCode.length !== 4) {
                 alert('올바른 4자리 숫자를 입력해주세요!');
+                return;
+            }
+
+            if (!firebase.auth().currentUser) {
+                alert('서버 연결 중입니다. 잠시 후 다시 시도해주세요. (인증 대기)');
                 return;
             }
 
