@@ -1383,6 +1383,24 @@
             'spade': '♠', 'heart': '♥', 'diamond': '♦', 'club': '♣'
         };
 
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function sanitizeNickname(value) {
+            const normalized = String(value ?? '')
+                .replace(/[\u0000-\u001F\u007F]/g, '')
+                .trim()
+                .replace(/\s+/g, ' ');
+            const stripped = normalized.replace(/[<>]/g, '');
+            return stripped.slice(0, 10);
+        }
+
         // 유틸리티 함수
         function generateRoomCode() {
             // 4자리 숫자 생성
@@ -1429,7 +1447,7 @@
         }
 
         function startSinglePlayer() {
-            myNickname = document.getElementById('nickname-input').value.trim() || '플레이어';
+            myNickname = sanitizeNickname(document.getElementById('nickname-input').value) || '플레이어';
             const aiCount = selectedAICount;
 
             isSinglePlayer = true;
@@ -1439,6 +1457,7 @@
             players = [{
                 id: 'human',
                 name: '👤 ' + myNickname,
+                safeName: escapeHtml('👤 ' + myNickname),
                 hand: [],
                 isMe: true,
                 isHuman: true,
@@ -1461,6 +1480,7 @@
                 players.push({
                     id: 'ai_' + i,
                     name: AI_NAMES[i],
+                    safeName: escapeHtml(AI_NAMES[i]),
                     hand: [],
                     isMe: false,
                     isHuman: false,
@@ -1532,7 +1552,7 @@
 
         function createRoom() {
             console.log('createRoom called');
-            const nick = document.getElementById('nickname-input').value.trim();
+            const nick = sanitizeNickname(document.getElementById('nickname-input').value);
             if (!nick) {
                 alert('닉네임을 입력해주세요!');
                 return;
@@ -1575,7 +1595,7 @@
         }
 
         function joinRoom() {
-            const nick = document.getElementById('nickname-input').value.trim();
+            const nick = sanitizeNickname(document.getElementById('nickname-input').value);
             const roomCode = document.getElementById('room-code-input').value.trim().toUpperCase();
 
             if (!nick) {
@@ -1612,7 +1632,9 @@
                     return;
                 }
 
-                const playerCount = Object.keys(roomData.players || {}).length;
+                const playerCount = Object.values(roomData.players || {})
+                    .filter(p => p && p.connected !== false)
+                    .length;
                 if (playerCount >= 6) {
                     alert('방이 가득 찼습니다! (최대 6명)');
                     return;
@@ -1822,6 +1844,7 @@
                         players.push({
                             id: pid,
                             name: pData.name || '알 수 없음',
+                            safeName: escapeHtml(pData.name || '알 수 없음'),
                             hand: handData || [],
                             isMe: pid === myPlayerId,
                             connected: hasPlayerData ? pData.connected !== false : false,
@@ -1874,7 +1897,7 @@
 
                 html += `
                     <div class="player-item ${isHostPlayer ? 'host' : ''} ${isMe ? 'me' : ''}">
-                        <span>${pData.name} ${isMe ? '(나)' : ''}</span>
+                        <span>${escapeHtml(pData.name || '플레이어')} ${isMe ? '(나)' : ''}</span>
                         <div class="connection-status ${isConnected ? '' : 'offline'}"></div>
                     </div>
                 `;
@@ -1962,6 +1985,7 @@
                 roomRef.update({
                     status: 'playing',
                     gameState: {
+                        status: 'playing',
                         deck: deck,
                         discardPile: [firstCard],
                         currentPlayerIndex: 0,
@@ -2208,25 +2232,26 @@
                         })()}
                         </div>
                         <div class="player-label" style="margin-top:15px;text-align:center;">
-                            ${p.name} (나)
+                            ${p.safeName || escapeHtml(p.name || '플레이어')} (나)
                             <span class="card-count ${p.hand.length === 1 ? 'warning' : ''}">${p.hand.length}장</span>
                         </div>
                     `;
-                } else {
-                    // 상대 카드 (뒷면) - 라벨을 카드 아래로 이동
-                    slotEl.innerHTML = `
+                    } else {
+                        // 상대 카드 (뒷면) - 라벨을 카드 아래로 이동
+                        const safeName = p.safeName || escapeHtml(p.name || '플레이어');
+                        slotEl.innerHTML = `
                         <div class="player-area opponent-area ${isCurrent ? 'current-turn' : ''}">
                             <div class="cards-row">
                                 ${p.hand.map(() => `<div class="card card-back opponent-card"></div>`).join('')}
                             </div>
                         </div>
                         <div class="player-label" style="margin-top:8px;text-align:center;">
-                            ${p.name}
+                            ${safeName}
                             <span class="card-count ${p.hand.length === 1 ? 'warning' : ''}">${p.hand.length}장</span>
                         </div>
                     `;
-                }
-            });
+                    }
+                });
 
             // 버린 카드 표시 (최근 3장만)
             const discardEl = document.getElementById('discard-cards');
@@ -2432,11 +2457,9 @@
                 const { newHand, newDiscardPile, newDeck, newAttackStack, newAttackType,
                     newSkipTurns, newDirection, nextPlayerIndex, expectedTurnIndex } = window.pendingUpdate;
 
-                // 색상 적용된 알림 메시지 생성
-                const suitColors = { 'spade': '#000', 'heart': '#e11d48', 'diamond': '#e11d48', 'club': '#000' };
                 const suitNameText = { 'spade': '♠ 스페이드', 'heart': '♥ 하트', 'diamond': '♦ 다이아몬드', 'club': '♣ 클로버' };
-                const coloredSuit = `<span style="color:${suitColors[suit]};background:white;padding:2px 6px;border-radius:4px;">${suitNameText[suit]}</span>`;
-                const actionMsg = `${myNickname}님이 문양을 ${coloredSuit} (으)로 바꿨습니다!`;
+                const actorName = sanitizeNickname(myNickname) || '플레이어';
+                const actionMsg = `${actorName}님이 문양을 ${suitNameText[suit]} (으)로 바꿨습니다!`;
 
                 updateGameState({
                     deck: newDeck,
@@ -2662,7 +2685,7 @@
                         })()}
                         </div>
                         <div class="player-label" style="margin-top:15px;text-align:center;">
-                            ${p.name}
+                            ${p.safeName || escapeHtml(p.name || '플레이어')}
                             <span class="card-count ${p.hand.length === 1 ? 'warning' : ''}">${p.hand.length}장</span>
                             ${p.isBankrupt ? '<span style="background:#ef4444;padding:2px 6px;border-radius:5px;font-size:0.8rem;">파산</span>' : ''}
                             ${p.rank ? `<span style="background:#4ade80;padding:2px 6px;border-radius:5px;font-size:0.8rem;">${p.rank}등</span>` : ''}
@@ -2683,7 +2706,7 @@
                             </div>
                         </div>
                         <div class="player-label" style="margin-top:8px;text-align:center;">
-                            ${p.name}
+                            ${p.safeName || escapeHtml(p.name || '플레이어')}
                             <span class="card-count ${p.hand.length === 1 ? 'warning' : ''}">${p.hand.length}장</span>
                         </div>
                     `;
@@ -2918,12 +2941,10 @@
                 document.getElementById('suit-selector').style.display = 'none';
 
                 // 무늬 변경 알림 팝업 (색상 적용)
-                const suitColors = { 'spade': '#000', 'heart': '#e11d48', 'diamond': '#e11d48', 'club': '#000' };
                 const suitNameText = { 'spade': '♠ 스페이드', 'heart': '♥ 하트', 'diamond': '♦ 다이아몬드', 'club': '♣ 클로버' };
-                const coloredSuit = `<span style="color:${suitColors[suit]};background:white;padding:2px 6px;border-radius:4px;">${suitNameText[suit]}</span>`;
                 const humanPlayer = players.find(p => p.isHuman);
                 const playerName = humanPlayer ? humanPlayer.name : '플레이어';
-                showNotification(`${playerName}님이 문양을 ${coloredSuit} (으)로 바꿨습니다!`);
+                showNotification(`${playerName}님이 문양을 ${suitNameText[suit]} (으)로 바꿨습니다!`);
                 playSuitChangeSound(); // 소리 추가
 
                 setMessage(`♻️ ${suitSymbols[suit]} 선택!`);
@@ -3393,10 +3414,8 @@
                     }
                     singlePlayerState.currentSuit = bestSuit;
 
-                    const suitColors = { 'spade': '#000', 'heart': '#e11d48', 'diamond': '#e11d48', 'club': '#000' };
                     const suitNameText = { 'spade': '♠ 스페이드', 'heart': '♥ 하트', 'diamond': '♦ 다이아몬드', 'club': '♣ 클로버' };
-                    const coloredSuit = `<span style="color:${suitColors[bestSuit]};background:white;padding:2px 6px;border-radius:4px;">${suitNameText[bestSuit]}</span>`;
-                    showNotification(`${player.name}님이 문양을 ${coloredSuit} (으)로 바꿨습니다!`);
+                    showNotification(`${player.name}님이 문양을 ${suitNameText[bestSuit]} (으)로 바꿨습니다!`);
                     playSuitChangeSound();
                 }
 
@@ -3448,7 +3467,7 @@
                 let color = p.rank === 1 ? '#fbbf24' : (p.isBankrupt ? '#f87171' : 'white');
                 rankHtml += `<div style="padding:10px;border-bottom:1px solid rgba(255,255,255,0.1);color:${color};">
                     <span style="font-weight:bold;width:50px;display:inline-block;">${status}</span>
-                    <span>${p.name}</span>
+                    <span>${p.safeName || escapeHtml(p.name || '플레이어')}</span>
                 </div>`;
             });
             rankHtml += '</div>';
@@ -3715,11 +3734,10 @@
                 const { newHand, newDiscardPile, newDeck, newAttackStack, newAttackType,
                     newSkipTurns, newDirection, nextPlayerIndex, expectedTurnIndex } = window.pendingUpdate;
 
-                // 알림 메시지 생성 (색상 적용)
-                const suitColors = { 'spade': '#000', 'heart': '#e11d48', 'diamond': '#e11d48', 'club': '#000' };
+                // 알림 메시지 생성
                 const suitNames = { 'spade': '♠ 스페이드', 'heart': '♥ 하트', 'diamond': '♦ 다이아몬드', 'club': '♣ 클로버' };
-                const coloredSuit = `<span style="color:${suitColors[suit]};background:white;padding:2px 6px;border-radius:4px;">${suitNames[suit]}</span>`;
-                const msg = `${myNickname}님이 문양을 ${coloredSuit} (으)로 바꿨습니다!`;
+                const actorName = sanitizeNickname(myNickname) || '플레이어';
+                const msg = `${actorName}님이 문양을 ${suitNames[suit]} (으)로 바꿨습니다!`;
                 playSuitChangeSound(); // 소리 추가
 
                 const updates = {
@@ -3873,7 +3891,7 @@
                 document.head.appendChild(style);
             }
 
-            el.innerHTML = msg;  // innerHTML으로 변경 (색상 태그 지원)
+            el.textContent = String(msg ?? '');
             el.style.display = 'block';
 
             if (window.notificationTimer) clearTimeout(window.notificationTimer);
