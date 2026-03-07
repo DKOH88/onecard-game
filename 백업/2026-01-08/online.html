@@ -1,0 +1,3611 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>원카드 온라인 v3.0.1 🃏</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a472a 0%, #0d2818 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            color: white;
+            overflow-x: hidden;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        /* 로비 스타일 */
+        .lobby-container {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 500px;
+            width: 100%;
+            margin-top: 50px;
+        }
+
+        .lobby-container h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4ade80, #22c55e);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #60a5fa, #3b82f6);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .room-code-display {
+            font-size: 2.5rem;
+            font-weight: bold;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            margin: 15px 0;
+            letter-spacing: 5px;
+        }
+
+        .player-list {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .player-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .player-item:last-child {
+            border-bottom: none;
+        }
+
+        .player-item.host::after {
+            content: '👑';
+            margin-left: 5px;
+        }
+
+        .player-item.me {
+            background: rgba(74, 222, 128, 0.2);
+            border-radius: 5px;
+        }
+
+        .connection-status {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #4ade80;
+        }
+
+        .connection-status.offline {
+            background: #ef4444;
+        }
+
+        /* 게임 영역 스타일 (기존과 동일) */
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 900px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px 20px;
+            border-radius: 15px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .direction-indicator {
+            font-size: 1.3rem;
+            padding: 5px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .game-table {
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+            height: 600px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .player-slot {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .player-slot.top {
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .player-slot.bottom {
+            bottom: -60px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+        }
+
+        .player-slot.left {
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .player-slot.right {
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .player-slot.top-left {
+            top: 10%;
+            left: 10%;
+        }
+
+        .player-slot.top-right {
+            top: 10%;
+            right: 10%;
+        }
+
+        .player-area {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px 25px;
+            border-radius: 15px;
+            min-width: 200px;
+            position: relative;
+            /* 배지 위치 잡기 위해 추가 */
+        }
+
+        .player-area.current-turn {
+            box-shadow: 0 0 20px #4ade80;
+            border: 2px solid #4ade80;
+        }
+
+        .player-label {
+            font-weight: bold;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .card-count {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            transition: all 0.3s;
+        }
+
+        .card-count.warning {
+            color: #ff4444;
+            /* 밝은 빨강 */
+            font-weight: bold;
+            background: rgba(0, 0, 0, 0.6);
+            /* 배경을 어둡게 하여 대비 강조 */
+            border: 1px solid #ff4444;
+            animation: pulse-red 0.8s infinite alternate;
+        }
+
+        @keyframes pulse-red {
+            from {
+                transform: scale(1);
+                box-shadow: 0 0 5px #ff4444;
+            }
+
+            to {
+                transform: scale(1.2);
+                box-shadow: 0 0 15px #ff4444;
+            }
+        }
+
+        .cards-row {
+            display: flex;
+            gap: 0;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 800px;
+        }
+
+        /* 카드 세로 겹침 효과 */
+        .overlap-card {
+            transform: translateY(-25px) !important;
+        }
+
+        .overlap-card:nth-child(-n+6) {
+            transform: translateY(0) !important;
+        }
+
+        .card {
+            width: 53px !important;
+            height: 74px !important;
+            flex-shrink: 0 !important;
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-left: -20px !important;
+            border: 1px solid #333;
+            box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+            font-size: 0.65rem;
+            /* opacity: 0.95; 제거됨 - 요청에 의해 투명도 삭제 */
+            /* 기본 투명도 */
+            background-color: white;
+            /* 투명도 적용 시 배경 필요 */
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+
+        .card:first-child {
+            margin-left: 0;
+        }
+
+        .card.playable:hover {
+            transform: translateY(-10px);
+            z-index: 10;
+            opacity: 1 !important;
+            /* 호버 시 불투명 */
+        }
+
+        .card.selected {
+            transform: translateY(-20px);
+            box-shadow: 0 0 15px #4ade80;
+            border-color: #4ade80;
+            opacity: 1 !important;
+            /* 선택 시 불투명 */
+        }
+
+        .card.playable:not(.selected) {
+            border: 2px solid #4ade80 !important;
+            box-shadow: 0 0 10px #4ade80;
+        }
+
+        /* 🆕 최근 뽑은 카드 효과 (2초간 은은한 노란색) */
+        .card.newly-drawn {
+            border: 2px solid #fbbf24 !important;
+            box-shadow: 0 0 15px rgba(251, 191, 36, 0.8) !important;
+            animation: pulseYellow 1s infinite alternate;
+        }
+
+        @keyframes pulseYellow {
+            from {
+                box-shadow: 0 0 10px rgba(251, 191, 36, 0.6);
+            }
+
+            to {
+                box-shadow: 0 0 20px rgba(251, 191, 36, 1);
+            }
+        }
+
+        .card-back {
+            background: linear-gradient(135deg, #1e3a5f, #0f1f35);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .card-back::after {
+            content: '🃏';
+        }
+
+        /* 카드 이미지 스타일 */
+        .card.spade,
+        .card.club,
+        .card.heart,
+        .card.diamond {
+            background-size: 92%;
+            background-position: center;
+            background-repeat: no-repeat;
+            color: transparent;
+            text-shadow: none;
+            background-color: white;
+            border-radius: 6px;
+        }
+
+        .card.spade.val-A {
+            background-image: url('./cards/spade/A.jpg?v=1');
+        }
+
+        .card.spade.val-2 {
+            background-image: url('./cards/spade/2.jpg?v=1');
+        }
+
+        .card.spade.val-3 {
+            background-image: url('./cards/spade/3.jpg?v=1');
+        }
+
+        .card.spade.val-4 {
+            background-image: url('./cards/spade/4.jpg?v=1');
+        }
+
+        .card.spade.val-5 {
+            background-image: url('./cards/spade/5.jpg?v=1');
+        }
+
+        .card.spade.val-6 {
+            background-image: url('./cards/spade/6.jpg?v=1');
+        }
+
+        .card.spade.val-7 {
+            background-image: url('./cards/spade/7.jpg?v=1');
+        }
+
+        .card.spade.val-8 {
+            background-image: url('./cards/spade/8.jpg?v=1');
+        }
+
+        .card.spade.val-9 {
+            background-image: url('./cards/spade/9.jpg?v=1');
+        }
+
+        .card.spade.val-10 {
+            background-image: url('./cards/spade/10.jpg?v=1');
+        }
+
+        .card.spade.val-J {
+            background-image: url('./cards/spade/J.jpg?v=1');
+        }
+
+        .card.spade.val-Q {
+            background-image: url('./cards/spade/Q.jpg?v=1');
+        }
+
+        .card.spade.val-K {
+            background-image: url('./cards/spade/K.jpg?v=1');
+        }
+
+        .card.club.val-A {
+            background-image: url('cards/club/A.jpg?v=5');
+        }
+
+        .card.club.val-2 {
+            background-image: url('cards/club/2.jpg?v=5');
+        }
+
+        .card.club.val-3 {
+            background-image: url('cards/club/3.jpg?v=5');
+        }
+
+        .card.club.val-4 {
+            background-image: url('cards/club/4.jpg?v=5');
+        }
+
+        .card.club.val-5 {
+            background-image: url('cards/club/5.jpg?v=5');
+        }
+
+        .card.club.val-6 {
+            background-image: url('cards/club/6.jpg?v=5');
+        }
+
+        .card.club.val-7 {
+            background-image: url('cards/club/7.jpg?v=5');
+        }
+
+        .card.club.val-8 {
+            background-image: url('cards/club/8.jpg?v=5');
+        }
+
+        .card.club.val-9 {
+            background-image: url('cards/club/9.jpg?v=5');
+        }
+
+        .card.club.val-10 {
+            background-image: url('cards/club/10.jpg?v=5');
+        }
+
+        .card.club.val-J {
+            background-image: url('cards/club/J.jpg?v=5');
+        }
+
+        .card.club.val-Q {
+            background-image: url('cards/club/Q.jpg?v=5');
+        }
+
+        .card.club.val-K {
+            background-image: url('cards/club/K.jpg?v=5');
+        }
+
+        .card.heart.val-A {
+            background-image: url('./cards/heart/A.jpg?v=1');
+        }
+
+        .card.heart.val-2 {
+            background-image: url('./cards/heart/2.jpg?v=1');
+        }
+
+        .card.heart.val-3 {
+            background-image: url('./cards/heart/3.jpg?v=1');
+        }
+
+        .card.heart.val-4 {
+            background-image: url('./cards/heart/4.jpg?v=1');
+        }
+
+        .card.heart.val-5 {
+            background-image: url('./cards/heart/5.jpg?v=1');
+        }
+
+        .card.heart.val-6 {
+            background-image: url('./cards/heart/6.jpg?v=1');
+        }
+
+        .card.heart.val-7 {
+            background-image: url('./cards/heart/7.jpg?v=1');
+        }
+
+        .card.heart.val-8 {
+            background-image: url('./cards/heart/8.jpg?v=1');
+        }
+
+        .card.heart.val-9 {
+            background-image: url('./cards/heart/9.jpg?v=1');
+        }
+
+        .card.heart.val-10 {
+            background-image: url('./cards/heart/10.jpg?v=1');
+        }
+
+        .card.heart.val-J {
+            background-image: url('./cards/heart/J.jpg?v=1');
+        }
+
+        .card.heart.val-Q {
+            background-image: url('./cards/heart/Q.jpg?v=1');
+        }
+
+        .card.heart.val-K {
+            background-image: url('./cards/heart/K.jpg?v=1');
+        }
+
+        .card.diamond.val-A {
+            background-image: url('./cards/diamond/A.jpg?v=1');
+        }
+
+        .card.diamond.val-2 {
+            background-image: url('./cards/diamond/2.jpg?v=1');
+        }
+
+        .card.diamond.val-3 {
+            background-image: url('./cards/diamond/3.jpg?v=1');
+        }
+
+        .card.diamond.val-4 {
+            background-image: url('./cards/diamond/4.jpg?v=1');
+        }
+
+        .card.diamond.val-5 {
+            background-image: url('./cards/diamond/5.jpg?v=1');
+        }
+
+        .card.diamond.val-6 {
+            background-image: url('./cards/diamond/6.jpg?v=1');
+        }
+
+        .card.diamond.val-7 {
+            background-image: url('./cards/diamond/7.jpg?v=1');
+        }
+
+        .card.diamond.val-8 {
+            background-image: url('./cards/diamond/8.jpg?v=1');
+        }
+
+        .card.diamond.val-9 {
+            background-image: url('./cards/diamond/9.jpg?v=1');
+        }
+
+        .card.diamond.val-10 {
+            background-image: url('./cards/diamond/10.jpg?v=1');
+        }
+
+        .card.diamond.val-J {
+            background-image: url('./cards/diamond/J.jpg?v=1');
+        }
+
+        .card.diamond.val-Q {
+            background-image: url('./cards/diamond/Q.jpg?v=1');
+        }
+
+        .card.diamond.val-K {
+            background-image: url('./cards/diamond/K.jpg?v=1');
+        }
+
+        .card.black-joker {
+            background: url('cards/black_joker.png') center/contain no-repeat;
+            background-color: white;
+            color: transparent;
+        }
+
+        .card.color-joker {
+            background: url('cards/color_joker.png') center/contain no-repeat;
+            background-color: white;
+            color: transparent;
+        }
+
+        .center-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            margin-top: 60px;
+            z-index: 50;
+            position: relative;
+        }
+
+        .deck-area {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .deck {
+            position: fixed !important;
+            bottom: 30px;
+            left: 30px;
+            width: 53px;
+            height: 73px;
+            z-index: 100;
+            cursor: pointer;
+        }
+
+        .deck::after {
+            content: '카드 받기';
+            position: absolute;
+            bottom: -18px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 10px;
+            white-space: nowrap;
+            text-shadow: 1px 1px 2px black;
+        }
+
+        .deck .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            background: url('cards/card_back_custom.jpg') center/cover no-repeat !important;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+        }
+
+        .deck.highlight {
+            animation: pulse-scale 1s ease-in-out infinite;
+        }
+
+        @keyframes pulse-scale {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.15);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes bounce-green {
+
+            0%,
+            100% {
+                transform: translateY(0);
+                box-shadow: 0 0 5px #4ade80;
+            }
+
+            50% {
+                transform: translateY(-6px);
+                box-shadow: 0 0 15px #4ade80;
+            }
+        }
+
+        .discard-pile {
+            display: flex;
+            align-items: center;
+        }
+
+        .direction-indicator {
+            font-size: 0.9rem !important;
+            opacity: 0.8;
+        }
+
+        #discard-cards {
+            display: flex;
+            align-items: center;
+        }
+
+        .message-box {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            text-align: center;
+            min-width: 200px;
+            position: relative;
+            z-index: 5000;
+        }
+
+        .message-box.attack {
+            background: linear-gradient(135deg, #dc2626, #991b1b);
+            animation: pulse 0.5s infinite alternate;
+        }
+
+        @keyframes pulse {
+            from {
+                transform: scale(1);
+            }
+
+            to {
+                transform: scale(1.05);
+            }
+        }
+
+        .action-buttons {
+            display: none;
+            gap: 15px;
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            background: transparent;
+            flex-direction: row;
+        }
+
+        .action-buttons button {
+            padding: 14px 28px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            min-width: 100px;
+        }
+
+        .action-buttons button:first-child {
+            background: #166534;
+            color: white;
+            border: 3px solid #4ade80;
+        }
+
+        .action-buttons button:last-child {
+            background: #1e3a5f;
+            color: #38bdf8;
+            border: 3px solid #38bdf8;
+        }
+
+        /* 상대방 카드 (작게) */
+        .opponent-card {
+            width: 30px !important;
+            height: 42px !important;
+            margin-left: -35px !important;
+            font-size: 0.6rem !important;
+        }
+
+        .opponent-card:first-child {
+            margin-left: 0 !important;
+        }
+
+        /* 상대방 카드 영역 */
+        .opponent-area {
+            min-width: auto !important;
+            padding: 17px 22px !important;
+        }
+
+        .opponent-area .cards-row {
+            max-width: 100px !important;
+            flex-wrap: wrap !important;
+            gap: 0 !important;
+            /* 갭 제거 */
+            justify-content: center !important;
+            padding-left: 10px;
+        }
+
+        .opponent-area .card {
+            margin-left: -40px !important;
+            /* 가로 겹치기 */
+            margin-bottom: -30px !important;
+            /* 세로 겹치기 */
+            box-shadow: -1px 0 2px rgba(0, 0, 0, 0.3);
+            /* 그림자로 구분 */
+        }
+
+        .opponent-area .card:first-child {
+            margin-left: 0 !important;
+        }
+
+        .opponent-area .opponent-card {
+            margin-left: 0 !important;
+            margin-bottom: 3px;
+        }
+
+        .version-badge {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.5);
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .suit-selector {
+            display: none;
+            gap: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 15px;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 100;
+        }
+
+        .suit-btn {
+            font-size: 2rem;
+            padding: 15px 25px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            background: white;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* 반응형 */
+        @media (max-width: 600px) {
+            .game-table {
+                height: 500px;
+            }
+
+            .card {
+                width: 40px;
+                height: 56px;
+            }
+
+            /* 🚀 [모바일 개선] 내 카드 영역 넓이 확장 */
+            .player-slot.bottom .player-area {
+                min-width: 280px !important;
+                max-width: 95vw !important;
+            }
+
+            /* 🚀 [모바일 개선] 좌우 AI 상태창 위치 조정 */
+            .player-slot.left {
+                left: 5px !important;
+                top: 35% !important;
+                transform: translateY(-50%) !important;
+            }
+
+            .player-slot.right {
+                right: 5px !important;
+                top: 35% !important;
+                transform: translateY(-50%) !important;
+            }
+
+            /* 🚀 [모바일 개선] 메시지 박스를 가운데 카드 아래로 이동 */
+            .center-area {
+                flex-direction: column !important;
+            }
+
+            .center-area .message-box {
+                order: 2 !important;
+                margin-top: 15px !important;
+            }
+
+            .center-area .deck-area {
+                order: 1 !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🃏 원카드 온라인</h1>
+
+    <!-- 로비 화면 -->
+    <div class="lobby-container" id="lobby-screen">
+        <h2>🎮 게임 로비</h2>
+        <div class="version-badge">v3.0.1</div>
+
+        <div id="main-menu">
+            <div class="input-group">
+                <label>닉네임</label>
+                <input type="text" id="nickname-input" placeholder="닉네임을 입력하세요" maxlength="10">
+            </div>
+
+            <p style="text-align:center; margin: 15px 0 5px; font-weight:bold; color:#4ade80;">온라인 멀티플레이</p>
+            <button class="btn btn-primary" onclick="createRoom()">🏠 방 만들기</button>
+            <button class="btn btn-secondary" onclick="showJoinForm()">🚪 방 참가하기</button>
+
+            <p style="text-align:center; margin: 20px 0 5px; font-weight:bold; color:#fbbf24;">싱글 플레이어</p>
+            <button class="btn" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#000;"
+                onclick="showSinglePlayerForm()">🤖 AI와 대전</button>
+        </div>
+
+        <div id="single-player-form" class="hidden">
+            <div class="input-group">
+                <label>AI 상대 수</label>
+                <div id="ai-count-buttons" style="display:flex;gap:8px;justify-content:center;">
+                    <button type="button" class="ai-count-btn" data-count="1" onclick="selectAICount(1)"
+                        style="flex:1;padding:12px 5px;border-radius:8px;border:2px solid #6366f1;background:#1a1a2e;color:#6366f1;cursor:pointer;font-size:1rem;font-weight:bold;">
+                        1명
+                    </button>
+                    <button type="button" class="ai-count-btn" data-count="2" onclick="selectAICount(2)"
+                        style="flex:1;padding:12px 5px;border-radius:8px;border:2px solid #6366f1;background:#1a1a2e;color:#6366f1;cursor:pointer;font-size:1rem;font-weight:bold;">
+                        2명
+                    </button>
+                    <button type="button" class="ai-count-btn selected" data-count="3" onclick="selectAICount(3)"
+                        style="flex:1;padding:12px 5px;border-radius:8px;border:2px solid #6366f1;background:#6366f1;color:white;cursor:pointer;font-size:1rem;font-weight:bold;">
+                        3명
+                    </button>
+                    <button type="button" class="ai-count-btn" data-count="4" onclick="selectAICount(4)"
+                        style="flex:1;padding:12px 5px;border-radius:8px;border:2px solid #6366f1;background:#1a1a2e;color:#6366f1;cursor:pointer;font-size:1rem;font-weight:bold;">
+                        4명
+                    </button>
+                </div>
+            </div>
+            <div class="input-group">
+                <label>AI 난이도</label>
+                <div id="ai-difficulty-buttons" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
+                    <button type="button" class="btn-option" data-value="beginner"
+                        onclick="selectAIDifficulty('beginner')"
+                        style="flex:1;min-width:80px;padding:10px;border-radius:8px;border:2px solid #22c55e;background:#1a1a2e;color:#22c55e;cursor:pointer;">
+                        🟢<br>초급
+                    </button>
+                    <button type="button" class="btn-option selected" data-value="intermediate"
+                        onclick="selectAIDifficulty('intermediate')"
+                        style="flex:1;min-width:80px;padding:10px;border-radius:8px;border:2px solid #eab308;background:#eab308;color:#000;cursor:pointer;">
+                        🟡<br>중급
+                    </button>
+                    <button type="button" class="btn-option" data-value="advanced"
+                        onclick="selectAIDifficulty('advanced')"
+                        style="flex:1;min-width:80px;padding:10px;border-radius:8px;border:2px solid #f97316;background:#1a1a2e;color:#f97316;cursor:pointer;">
+                        🟠<br>고급
+                    </button>
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="startSinglePlayer()">🎮 게임 시작</button>
+            <button class="btn btn-secondary" onclick="hideSinglePlayerForm()">취소</button>
+        </div>
+
+        <div id="join-form" class="hidden">
+            <div class="input-group">
+                <label>방 코드</label>
+                <input type="number" id="room-code-input" placeholder="4자리 숫자 코드" maxlength="4"
+                    style="text-transform: uppercase;"
+                    oninput="if(this.value.length > 4) this.value = this.value.slice(0, 4);">
+            </div>
+            <button class="btn btn-primary" onclick="joinRoom()">참가하기</button>
+            <button class="btn btn-secondary" onclick="hideJoinForm()">취소</button>
+        </div>
+
+        <div id="waiting-room" class="hidden">
+            <div class="room-code-display" id="room-code-display">------</div>
+            <p style="text-align:center;margin-bottom:10px;">친구에게 이 코드를 공유하세요!</p>
+
+            <div class="player-list" id="player-list">
+                <!-- 플레이어 목록이 여기에 표시됨 -->
+            </div>
+
+            <div id="host-controls" class="hidden">
+                <button class="btn btn-primary" onclick="startOnlineGame()" id="start-game-btn" disabled>
+                    🎮 게임 시작 (최소 2명 필요)
+                </button>
+            </div>
+
+            <button class="btn btn-secondary" onclick="leaveRoom()">🚪 나가기</button>
+        </div>
+    </div>
+
+    <!-- 게임 화면 -->
+    <div id="game-screen" class="hidden" style="width:100%;max-width:900px;">
+        <div class="game-header">
+            <div>
+                <span id="turn-text">대기 중...</span>
+            </div>
+            <div class="direction-indicator" id="direction">⟳ 시계</div>
+            <div>
+                <span id="deck-count">덱: 0</span>
+            </div>
+        </div>
+
+        <div class="game-table">
+            <div class="player-slot top" id="slot-top"></div>
+            <div class="player-slot left" id="slot-left"></div>
+            <div class="player-slot right" id="slot-right"></div>
+            <div class="player-slot top-left" id="slot-top-left"></div>
+            <div class="player-slot top-right" id="slot-top-right"></div>
+
+            <div class="center-area">
+                <div class="deck-area">
+                    <div class="deck" onclick="drawCardOnline()">
+                        <div class="card-back"></div>
+                    </div>
+                    <div class="discard-pile" id="discard-cards"></div>
+                </div>
+                <div class="message-box" id="message">게임 시작!</div>
+                <div class="action-buttons" id="action-buttons">
+                    <button class="btn btn-primary" onclick="playSelectedCardsOnline()">카드 내기</button>
+                    <button class="btn btn-secondary" onclick="clearSelection()">취소</button>
+                </div>
+            </div>
+
+            <div class="player-slot bottom" id="slot-bottom"></div>
+        </div>
+    </div>
+
+    <!-- 무늬 선택 -->
+    <div class="suit-selector" id="suit-selector">
+        <button class="suit-btn" style="color:#000;" onclick="selectSuitOnline('spade')">♠</button>
+        <button class="suit-btn" style="color:#e11d48;" onclick="selectSuitOnline('heart')">♥</button>
+        <button class="suit-btn" style="color:#e11d48;" onclick="selectSuitOnline('diamond')">♦</button>
+        <button class="suit-btn" style="color:#000;" onclick="selectSuitOnline('club')">♣</button>
+    </div>
+
+    <script>
+        // Firebase 설정
+        const firebaseConfig = {
+            databaseURL: "https://dkcard-89e9c-default-rtdb.asia-southeast1.firebasedatabase.app"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // 게임 상태
+        let myPlayerId = null;
+        let myNickname = '';
+        let currentRoomCode = null;
+        let isHost = false;
+        let roomRef = null;
+        let gameState = null;
+        let players = [];
+        let selectedCards = [];
+        let lastTurnIndex = -1; // 턴 변경 감지용
+
+        // 알림음 생성
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playTurnSound() {
+            try {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                oscillator.frequency.setValueAtTime(880, audioContext.currentTime); // A5
+                oscillator.frequency.setValueAtTime(1175, audioContext.currentTime + 0.1); // D6
+
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.3);
+            } catch (e) {
+                console.log('Sound not available');
+            }
+        }
+
+        function playShuffleSound() {
+            try {
+                // 카드 셔플 효과음 (빠른 노이즈)
+                for (let i = 0; i < 8; i++) {
+                    setTimeout(() => {
+                        const bufferSize = 2 * audioContext.sampleRate;
+                        const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+                        const output = noiseBuffer.getChannelData(0);
+                        for (let j = 0; j < bufferSize; j++) {
+                            output[j] = Math.random() * 2 - 1;
+                        }
+                        const whiteNoise = audioContext.createBufferSource();
+                        whiteNoise.buffer = noiseBuffer;
+
+                        const gainNode = audioContext.createGain();
+                        const filter = audioContext.createBiquadFilter();
+                        filter.type = 'highpass';
+                        filter.frequency.value = 1000;
+
+                        whiteNoise.connect(filter);
+                        filter.connect(gainNode);
+                        gainNode.connect(audioContext.destination);
+
+                        gainNode.gain.setValueAtTime(0.05, audioContext.currentTime);
+                        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1);
+
+                        whiteNoise.start(audioContext.currentTime);
+                        whiteNoise.stop(audioContext.currentTime + 0.1);
+                    }, i * 50);
+                }
+            } catch (e) {
+                console.log('Shuffle sound error');
+            }
+        }
+
+        function playCardPlaySound() {
+            // 착! (더 짧고 간결하게)
+            try {
+                const t = audioContext.currentTime;
+
+                // 1. 타격감 (Snap) - 아주 짧게
+                const osc = audioContext.createOscillator();
+                const oscGain = audioContext.createGain();
+                osc.connect(oscGain);
+                oscGain.connect(audioContext.destination);
+
+                osc.frequency.setValueAtTime(800, t); // 시작 주파수 높임 (날카롭게)
+                osc.frequency.exponentialRampToValueAtTime(100, t + 0.05); // 빠르게 떨어짐
+
+                oscGain.gain.setValueAtTime(0.8, t);
+                oscGain.gain.exponentialRampToValueAtTime(0.01, t + 0.05); // 0.05초 만에 사라짐
+
+                osc.start(t);
+                osc.stop(t + 0.05);
+
+                // 2. 마찰음 (Click/Clack)
+                const bufferSize = audioContext.sampleRate * 0.05; // 0.05초
+                const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+
+                const noise = audioContext.createBufferSource();
+                noise.buffer = buffer;
+                const noiseFilter = audioContext.createBiquadFilter();
+                noiseFilter.type = 'highpass';
+                noiseFilter.frequency.value = 2000; // 고음역대만 사용
+
+                const noiseGain = audioContext.createGain();
+                noiseGain.gain.setValueAtTime(0.5, t);
+                noiseGain.gain.exponentialRampToValueAtTime(0.01, t + 0.03);
+
+                noise.connect(noiseFilter);
+                noiseFilter.connect(noiseGain);
+                noiseGain.connect(audioContext.destination);
+
+                noise.start(t);
+            } catch (e) { }
+        }
+
+        function playCardDrawSound() {
+            // 스윽 (종이 넘기는 소리)
+            try {
+                const t = audioContext.currentTime;
+                const duration = 0.15; // 약간 더 짧게
+
+                const bufferSize = audioContext.sampleRate * duration;
+                const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+
+                const noise = audioContext.createBufferSource();
+                noise.buffer = buffer;
+
+                // Bandpass로 종이 특유의 '사각' 소리 구현
+                const filter = audioContext.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.Q.value = 1;
+                filter.frequency.setValueAtTime(1000, t);
+                filter.frequency.linearRampToValueAtTime(2500, t + duration); // 주파수 스윕
+
+                const gainNode = audioContext.createGain();
+                gainNode.gain.setValueAtTime(0, t);
+                gainNode.gain.linearRampToValueAtTime(0.5, t + 0.02); // 빠른 어택
+                gainNode.gain.linearRampToValueAtTime(0, t + duration); // 페이드 아웃
+
+                noise.connect(filter);
+                filter.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                noise.start(t);
+            } catch (e) { }
+        }
+
+        function playSuitChangeSound() {
+            // 띠리링~ (문양 변경 - 아르페지오 효과)
+            try {
+                const now = audioContext.currentTime;
+                const notes = [523.25, 659.25, 783.99, 1046.50]; // C E G C (도미솔도)
+
+                notes.forEach((freq, i) => {
+                    const osc = audioContext.createOscillator();
+                    const gain = audioContext.createGain();
+
+                    osc.connect(gain);
+                    gain.connect(audioContext.destination);
+
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now + i * 0.1);
+
+                    gain.gain.setValueAtTime(0, now + i * 0.1);
+                    gain.gain.linearRampToValueAtTime(0.1, now + i * 0.1 + 0.05);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.3);
+
+                    osc.start(now + i * 0.1);
+                    osc.stop(now + i * 0.1 + 0.3);
+                });
+            } catch (e) { }
+        }
+
+        function playGameOverSound() {
+            try {
+                // 슬픈 하강 멜로디
+                const notes = [440, 392, 349, 293]; // A4, G4, F4, D4
+                notes.forEach((freq, i) => {
+                    setTimeout(() => {
+                        const oscillator = audioContext.createOscillator();
+                        const gainNode = audioContext.createGain();
+
+                        oscillator.type = 'sine';
+                        oscillator.connect(gainNode);
+                        gainNode.connect(audioContext.destination);
+
+                        oscillator.frequency.setValueAtTime(freq, audioContext.currentTime);
+                        gainNode.gain.setValueAtTime(0.25, audioContext.currentTime);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
+
+                        oscillator.start(audioContext.currentTime);
+                        oscillator.stop(audioContext.currentTime + 0.4);
+                    }, i * 300);
+                });
+            } catch (e) {
+                console.log('Game over sound not available');
+            }
+        }
+
+        // 싱글 플레이어 상태
+        let isSinglePlayer = false;
+        let singlePlayerState = {
+            deck: [],
+            discardPile: [],
+            currentPlayerIndex: 0,
+            direction: 1,
+            attackStack: 0,
+            attackType: null,
+            currentSuit: null,
+            skipTurns: 0
+        };
+        const BANKRUPT_LIMIT = 15;
+        const AI_NAMES = ['🤖 AI-1', '🦾 AI-2', '🔧 AI-3', '⚙️ AI-4', '🛠️ AI-5'];
+        let aiDifficulty = 'intermediate'; // 기본값: 중급
+
+        const suitSymbols = {
+            'spade': '♠', 'heart': '♥', 'diamond': '♦', 'club': '♣'
+        };
+
+        // 유틸리티 함수
+        function generateRoomCode() {
+            // 4자리 숫자 생성
+            return Math.floor(1000 + Math.random() * 9000).toString();
+        }
+
+        function generatePlayerId() {
+            return 'player_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        // 싱글 플레이어 함수
+        function showSinglePlayerForm() {
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById('single-player-form').classList.remove('hidden');
+        }
+
+        function hideSinglePlayerForm() {
+            document.getElementById('single-player-form').classList.add('hidden');
+            document.getElementById('main-menu').classList.remove('hidden');
+        }
+
+        function selectAIDifficulty(difficulty) {
+            aiDifficulty = difficulty;
+            const colors = {
+                'beginner': '#22c55e',
+                'intermediate': '#eab308',
+                'advanced': '#f97316'
+            };
+            document.querySelectorAll('#ai-difficulty-buttons .btn-option').forEach(btn => {
+                const isSelected = btn.dataset.value === difficulty;
+                btn.style.backgroundColor = isSelected ? colors[difficulty] : '#1a1a2e';
+                btn.style.color = isSelected ? (difficulty === 'intermediate' ? '#000' : '#fff') : colors[btn.dataset.value];
+            });
+        }
+
+        let selectedAICount = 3; // 기본값 3명
+        function selectAICount(count) {
+            selectedAICount = count;
+            document.querySelectorAll('.ai-count-btn').forEach(btn => {
+                const isSelected = parseInt(btn.dataset.count) === count;
+                btn.style.backgroundColor = isSelected ? '#6366f1' : '#1a1a2e';
+                btn.style.color = isSelected ? 'white' : '#6366f1';
+            });
+        }
+
+        function startSinglePlayer() {
+            myNickname = document.getElementById('nickname-input').value.trim() || '플레이어';
+            const aiCount = selectedAICount;
+
+            isSinglePlayer = true;
+            myPlayerId = 'human';
+
+            // 플레이어 배열 생성
+            players = [{
+                id: 'human',
+                name: '👤 ' + myNickname,
+                hand: [],
+                isMe: true,
+                isHuman: true,
+                isBankrupt: false,
+                rank: null,
+                slot: 'bottom'
+            }];
+
+            // AI 플레이어 추가
+            const totalPlayers = aiCount + 1;
+            const slots = {
+                2: ['bottom', 'top'],
+                3: ['bottom', 'left', 'top'],
+                4: ['bottom', 'left', 'top', 'right'],
+                5: ['bottom', 'left', 'top-left', 'top-right', 'right'],
+                6: ['bottom', 'left', 'top-left', 'top', 'top-right', 'right']
+            };
+
+            for (let i = 0; i < aiCount; i++) {
+                players.push({
+                    id: 'ai_' + i,
+                    name: AI_NAMES[i],
+                    hand: [],
+                    isMe: false,
+                    isHuman: false,
+                    isBankrupt: false,
+                    rank: null,
+                    slot: slots[totalPlayers][i + 1]
+                });
+            }
+
+            // 덱 생성 및 셔플
+            singlePlayerState.deck = createDeck();
+            shuffle(singlePlayerState.deck);
+            playShuffleSound(); // 셔플 사운드 재생
+
+            // 카드 분배 (5장씩)
+            players.forEach(p => {
+                p.hand = [];
+                for (let i = 0; i < 5; i++) {
+                    p.hand.push(singlePlayerState.deck.pop());
+                }
+                sortHand(p.hand); // 카드 정렬
+            });
+
+            // 첫 카드
+            let firstCard;
+            do {
+                firstCard = singlePlayerState.deck.pop();
+                if (isSpecialCard(firstCard)) {
+                    singlePlayerState.deck.unshift(firstCard);
+                } else {
+                    break;
+                }
+            } while (true);
+
+            singlePlayerState.discardPile = [firstCard];
+            singlePlayerState.currentSuit = firstCard.suit;
+            singlePlayerState.currentPlayerIndex = 0;
+            singlePlayerState.direction = 1;
+            singlePlayerState.attackStack = 0;
+            singlePlayerState.attackType = null;
+            singlePlayerState.skipTurns = 0;
+
+            // gameState 동기화
+            gameState = singlePlayerState;
+
+            showGameScreen();
+            renderSingle();
+            setMessage('게임 시작! 당신의 턴입니다.');
+        }
+
+        // 로비 함수
+        function showJoinForm() {
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById('join-form').classList.remove('hidden');
+        }
+
+        function hideJoinForm() {
+            document.getElementById('join-form').classList.add('hidden');
+            document.getElementById('main-menu').classList.remove('hidden');
+        }
+
+        function createRoom() {
+            myNickname = document.getElementById('nickname-input').value.trim();
+            if (!myNickname) {
+                alert('닉네임을 입력해주세요!');
+                return;
+            }
+
+            myPlayerId = generatePlayerId();
+            currentRoomCode = generateRoomCode();
+            isHost = true;
+
+            roomRef = database.ref('rooms/' + currentRoomCode);
+
+            roomRef.set({
+                host: myPlayerId,
+                status: 'waiting',
+                createdAt: Date.now(),
+                players: {
+                    [myPlayerId]: {
+                        name: myNickname,
+                        connected: true,
+                        joinedAt: Date.now()
+                    }
+                }
+            }).then(() => {
+                showWaitingRoom();
+                listenToRoom();
+                setupDisconnectHandler();
+            }).catch(err => {
+                alert('방 생성 실패: ' + err.message);
+            });
+        }
+
+        function joinRoom() {
+            myNickname = document.getElementById('nickname-input').value.trim();
+            const roomCode = document.getElementById('room-code-input').value.trim().toUpperCase();
+
+            if (!myNickname) {
+                alert('닉네임을 입력해주세요!');
+                return;
+            }
+            if (!roomCode || roomCode.length !== 4) {
+                alert('올바른 4자리 숫자를 입력해주세요!');
+                return;
+            }
+
+            myPlayerId = generatePlayerId();
+            currentRoomCode = roomCode;
+            roomRef = database.ref('rooms/' + currentRoomCode);
+
+            roomRef.once('value').then(snapshot => {
+                if (!snapshot.exists()) {
+                    alert('존재하지 않는 방입니다!');
+                    return;
+                }
+
+                const roomData = snapshot.val();
+                if (roomData.status !== 'waiting') {
+                    alert('이미 게임이 시작된 방입니다!');
+                    return;
+                }
+
+                const playerCount = Object.keys(roomData.players || {}).length;
+                if (playerCount >= 6) {
+                    alert('방이 가득 찼습니다! (최대 6명)');
+                    return;
+                }
+
+                isHost = false;
+                roomRef.child('players/' + myPlayerId).set({
+                    name: myNickname,
+                    connected: true,
+                    joinedAt: Date.now()
+                }).then(() => {
+                    hideJoinForm();
+                    showWaitingRoom();
+                    listenToRoom();
+                    setupDisconnectHandler();
+                });
+            });
+        }
+
+        function showWaitingRoom() {
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById('join-form').classList.add('hidden');
+            document.getElementById('waiting-room').classList.remove('hidden');
+            document.getElementById('room-code-display').textContent = currentRoomCode;
+
+            if (isHost) {
+                document.getElementById('host-controls').classList.remove('hidden');
+            }
+        }
+
+        function setupDisconnectHandler() {
+            // 연결 끊김 시 오프라인 표시
+            roomRef.child('players/' + myPlayerId + '/connected').onDisconnect().set(false);
+
+            // 화면 복귀 시 자동 재연결
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible' && roomRef && myPlayerId) {
+                    roomRef.child('players/' + myPlayerId + '/connected').set(true);
+                }
+            });
+
+            // 포커스 복귀 시에도 재연결 (일부 모바일 브라우저용)
+            window.addEventListener('focus', () => {
+                if (roomRef && myPlayerId) {
+                    roomRef.child('players/' + myPlayerId + '/connected').set(true);
+                }
+            });
+        }
+
+        function listenToRoom() {
+            roomRef.on('value', snapshot => {
+                if (!snapshot.exists()) {
+                    alert('방이 삭제되었습니다!');
+                    location.reload();
+                    return;
+                }
+
+                const roomData = snapshot.val();
+
+                // 게임 시작 확인
+                if ((roomData.status === 'playing' || roomData.status === 'finished') && roomData.gameState) {
+                    gameState = roomData.gameState;
+                    players = [];
+                    const playerOrder = roomData.gameState.playerOrder || [];
+
+                    // 내 위치(인덱스) 먼저 찾기
+                    const myIndex = playerOrder.indexOf(myPlayerId);
+
+                    playerOrder.forEach((pid, idx) => {
+                        const pData = roomData.players[pid];
+                        const handData = roomData.gameState.hands ? roomData.gameState.hands[pid] : [];
+                        players.push({
+                            id: pid,
+                            name: pData.name,
+                            hand: handData || [],
+                            isMe: pid === myPlayerId,
+                            isBankrupt: pData.isBankrupt || false,
+                            rank: pData.rank || null,
+                            slot: getSlotForPlayer(idx, playerOrder.length, myIndex)
+                        });
+                    });
+                    showGameScreen();
+                    render();
+
+                    // 전역 알림 표시 (무늬 변경 등)
+                    if (gameState.lastAction && gameState.lastActionId && gameState.lastActionId !== window.lastActionIdProcessed) {
+                        if (typeof showNotification === 'function') {
+                            showNotification(gameState.lastAction);
+                        }
+                        window.lastActionIdProcessed = gameState.lastActionId;
+                    }
+
+                    // 게임 종료 확인
+                    if (roomData.gameState.status === 'finished' && roomData.gameState.winner) {
+                        showGameResult(roomData.gameState.winner, roomData.players);
+                    }
+                    return;
+                }
+
+                // 대기실 플레이어 목록 업데이트
+                updatePlayerList(roomData);
+            });
+        }
+
+        function updatePlayerList(roomData) {
+            const playerListEl = document.getElementById('player-list');
+            const playersData = roomData.players || {};
+            const hostId = roomData.host;
+
+            let html = '';
+            let connectedCount = 0;
+
+            Object.entries(playersData).forEach(([pid, pData]) => {
+                const isMe = pid === myPlayerId;
+                const isHostPlayer = pid === hostId;
+                const isConnected = pData.connected;
+
+                if (isConnected) connectedCount++;
+
+                html += `
+                    <div class="player-item ${isHostPlayer ? 'host' : ''} ${isMe ? 'me' : ''}">
+                        <span>${pData.name} ${isMe ? '(나)' : ''}</span>
+                        <div class="connection-status ${isConnected ? '' : 'offline'}"></div>
+                    </div>
+                `;
+            });
+
+            playerListEl.innerHTML = html;
+
+            // 시작 버튼 활성화
+            const startBtn = document.getElementById('start-game-btn');
+            if (startBtn) {
+                if (connectedCount >= 2) {
+                    startBtn.disabled = false;
+                    startBtn.textContent = `🎮 게임 시작 (${connectedCount}명)`;
+                } else {
+                    startBtn.disabled = true;
+                    startBtn.textContent = '🎮 게임 시작 (최소 2명 필요)';
+                }
+            }
+        }
+
+        function getSlotForPlayer(index, totalPlayers, myIndex) {
+            // myIndex가 유효하지 않으면 기본값 사용
+            if (myIndex < 0) myIndex = 0;
+            const relativeIndex = (index - myIndex + totalPlayers) % totalPlayers;
+
+            const slots = {
+                2: ['bottom', 'top'],
+                3: ['bottom', 'left', 'top'],
+                4: ['bottom', 'left', 'top', 'right'],
+                5: ['bottom', 'left', 'top-left', 'top-right', 'right'],
+                6: ['bottom', 'left', 'top-left', 'top', 'top-right', 'right']
+            };
+
+            return slots[totalPlayers] ? slots[totalPlayers][relativeIndex] : 'bottom';
+        }
+
+        function leaveRoom() {
+            if (roomRef) {
+                roomRef.child('players/' + myPlayerId).remove();
+                roomRef.off();
+            }
+            location.reload();
+        }
+
+        // 게임 시작 (방장만)
+        function startOnlineGame() {
+            if (!isHost) return;
+
+            roomRef.once('value').then(snapshot => {
+                const roomData = snapshot.val();
+                const playerIds = Object.keys(roomData.players).filter(pid => roomData.players[pid].connected);
+
+                if (playerIds.length < 2) {
+                    alert('최소 2명이 필요합니다!');
+                    return;
+                }
+
+                // 덱 생성 및 셔플
+                const deck = createDeck();
+                shuffle(deck);
+                playShuffleSound(); // 셔플 사운드 재생
+
+                // 카드 분배 (5장씩)
+                const hands = {};
+                playerIds.forEach(pid => {
+                    hands[pid] = [];
+                    for (let i = 0; i < 5; i++) {
+                        hands[pid].push(deck.pop());
+                    }
+                    sortHand(hands[pid]); // 카드 정렬
+                });
+
+                // 첫 카드 (특수 카드 제외)
+                let firstCard;
+                do {
+                    firstCard = deck.pop();
+                    if (isSpecialCard(firstCard)) {
+                        deck.unshift(firstCard);
+                    } else {
+                        break;
+                    }
+                } while (true);
+
+                // 게임 상태 저장
+                roomRef.update({
+                    status: 'playing',
+                    gameState: {
+                        deck: deck,
+                        discardPile: [firstCard],
+                        currentPlayerIndex: 0,
+                        direction: 1,
+                        attackStack: 0,
+                        attackType: null,
+                        currentSuit: firstCard.suit,
+                        skipTurns: 0,
+                        playerOrder: playerIds,
+                        hands: hands
+                    }
+                });
+            });
+        }
+
+        // 게임 재시작 (방장만)
+        function restartGame() {
+            if (!isHost) return;
+
+            roomRef.once('value').then(snapshot => {
+                const roomData = snapshot.val();
+                if (!roomData) return;
+
+                // 연결된 플레이어만 추림
+                const playerIds = Object.keys(roomData.players).filter(pid => roomData.players[pid].connected);
+
+                if (playerIds.length < 2) {
+                    alert('최소 2명이 필요합니다!');
+                    return;
+                }
+
+                // 승자 확인 (이전 게임 결과)
+                const prevWinnerId = roomData.gameState ? roomData.gameState.winner : null;
+                let startPlayerIndex = 0;
+
+                // 승자가 존재하고 여전히 방에 있다면 그 사람부터 시작
+                if (prevWinnerId && playerIds.includes(prevWinnerId)) {
+                    startPlayerIndex = playerIds.indexOf(prevWinnerId);
+                }
+
+                // 덱 생성 및 셔플
+                const deck = createDeck();
+                shuffle(deck);
+                playShuffleSound();
+
+                // 카드 분배 (5장씩)
+                const hands = {};
+                playerIds.forEach(pid => {
+                    hands[pid] = [];
+                    for (let i = 0; i < 5; i++) {
+                        hands[pid].push(deck.pop());
+                    }
+                    sortHand(hands[pid]); // 카드 정렬
+                });
+
+                // 첫 카드
+                let firstCard;
+                do {
+                    firstCard = deck.pop();
+                    if (isSpecialCard(firstCard)) {
+                        deck.unshift(firstCard);
+                    } else {
+                        break;
+                    }
+                } while (true);
+
+                // 업데이트 데이터 구성
+                const updates = {};
+
+                // 1. 게임 상태 초기화
+                updates['status'] = 'playing';
+                updates['gameState'] = {
+                    deck: deck,
+                    discardPile: [firstCard],
+                    currentPlayerIndex: startPlayerIndex, // 승자부터 시작
+                    direction: 1,
+                    attackStack: 0,
+                    attackType: null,
+                    currentSuit: firstCard.suit,
+                    skipTurns: 0,
+                    playerOrder: playerIds,
+                    hands: hands,
+                    prevWinner: prevWinnerId // 디버깅용
+                };
+
+                // 2. 플레이어 상태 초기화 (파산, 등수 제거)
+                playerIds.forEach(pid => {
+                    updates[`players/${pid}/isBankrupt`] = null;
+                    updates[`players/${pid}/rank`] = null;
+                });
+
+                roomRef.update(updates).catch(err => alert('재시작 오류: ' + err.message));
+
+                // 내 카드 영역 다시 표시 (showGameResult에서 숨겨진 경우)
+                const bottomSlot = document.getElementById('slot-bottom');
+                if (bottomSlot) bottomSlot.style.display = '';
+
+                // 선택된 카드 초기화
+                selectedCards = [];
+            });
+        }
+
+        function createDeck() {
+            const suits = ['spade', 'heart', 'diamond', 'club'];
+            const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+            const deck = [];
+
+            for (let suit of suits) {
+                for (let value of values) {
+                    deck.push({ suit, value });
+                }
+            }
+            deck.push({ suit: 'black-joker', value: 'JOKER' });
+            deck.push({ suit: 'color-joker', value: 'JOKER' });
+
+            return deck;
+        }
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function isSpecialCard(card) {
+            return card.value === '2' || card.value === 'A' ||
+                card.value === 'J' || card.value === 'Q' || card.value === 'K' ||
+                card.suit === 'black-joker' || card.suit === 'color-joker';
+        }
+
+        // 카드 정렬 함수: 칼라조커 > 흑백조커 > A > K > Q > J > 10 > 9 > ... > 2
+        function sortHand(hand) {
+            const valueOrder = {
+                'JOKER': 100, // 조커 우선
+                'A': 14, 'K': 13, 'Q': 12, 'J': 11, '10': 10,
+                '9': 9, '8': 8, '7': 7, '6': 6, '5': 5, '4': 4, '3': 3, '2': 2
+            };
+
+            hand.sort((a, b) => {
+                // 1. 칼라조커 우선
+                if (a.suit === 'color-joker' && b.suit !== 'color-joker') return -1;
+                if (b.suit === 'color-joker' && a.suit !== 'color-joker') return 1;
+
+                // 2. 흑백조커
+                if (a.suit === 'black-joker' && b.suit !== 'black-joker') return -1;
+                if (b.suit === 'black-joker' && a.suit !== 'black-joker') return 1;
+
+                // 3. 값 비교 (A > K > Q > J > 10 > ... > 2)
+                const aVal = valueOrder[a.value] || 0;
+                const bVal = valueOrder[b.value] || 0;
+                if (aVal !== bVal) return bVal - aVal; // 내림차순
+
+                // 4. 같은 값이면 무늬 정렬 (스페이드 > 하트 > 다이아 > 클로버)
+                const suitOrder = { 'spade': 4, 'heart': 3, 'diamond': 2, 'club': 1 };
+                return (suitOrder[b.suit] || 0) - (suitOrder[a.suit] || 0);
+            });
+
+            return hand;
+        }
+
+        function showGameScreen() {
+            document.getElementById('lobby-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+
+            // 내 카드 영역 다시 표시 (게임 종료 후 재시작 시)
+            const bottomSlot = document.getElementById('slot-bottom');
+            if (bottomSlot) bottomSlot.style.display = '';
+
+            // 선택된 카드 초기화
+            selectedCards = [];
+        }
+
+        // 게임 렌더링
+        function render() {
+            if (!gameState) return;
+
+            document.getElementById('direction').textContent = gameState.direction === 1 ? '⟳ 시계' : '⟲ 반시계';
+            document.getElementById('deck-count').textContent = `남은 카드 수: ${gameState.deck.length}`;
+
+            // 슬롯 초기화
+            ['top', 'left', 'right', 'bottom', 'top-left', 'top-right'].forEach(slot => {
+                const el = document.getElementById('slot-' + slot);
+                if (el) el.innerHTML = '';
+            });
+
+            // 현재 턴 플레이어
+            const currentPlayer = players[gameState.currentPlayerIndex];
+            const isMyTurn = currentPlayer && currentPlayer.isMe;
+
+            document.getElementById('turn-text').textContent = currentPlayer ?
+                `${currentPlayer.name}의 턴` : '';
+
+            // 플레이어 렌더링
+            players.forEach((p, idx) => {
+                const slotEl = document.getElementById('slot-' + p.slot);
+                if (!slotEl) return;
+
+                const isCurrent = gameState.currentPlayerIndex === idx;
+
+                if (p.isMe) {
+                    // 내 카드 (앞면) - 라벨을 녹색 테두리 밖으로 이동
+                    slotEl.innerHTML = `
+                        <div class="player-area ${isCurrent ? 'current-turn' : ''}">
+                            ${(() => {
+                            const CARDS_PER_ROW = 6;
+                            const rows = [];
+                            for (let r = 0; r < Math.ceil(p.hand.length / CARDS_PER_ROW); r++) {
+                                rows.push(p.hand.slice(r * CARDS_PER_ROW, (r + 1) * CARDS_PER_ROW));
+                            }
+
+                            const renderCard = (card, i) => {
+                                const firstSelectedCard = selectedCards.length > 0 ? p.hand[selectedCards[0]] : null;
+                                const isSameValueAsSelected = firstSelectedCard && card.value === firstSelectedCard.value;
+                                const playable = isMyTurn && (canPlayCard(card) || isSameValueAsSelected);
+                                const selected = selectedCards.includes(i);
+                                const isNormalSuit = ['spade', 'heart', 'diamond', 'club'].includes(card.suit);
+                                const valueClass = isNormalSuit ? `val-${card.value}` : '';
+
+                                // 🆕 최근 드로우 효과 체크
+                                const isNew = card.drawnAt && (Date.now() - card.drawnAt < 2000);
+                                const newClass = isNew ? 'newly-drawn' : '';
+
+                                return `<div class="card ${card.suit} ${valueClass} ${playable ? 'playable' : ''} ${selected ? 'selected' : ''} ${newClass}"
+                                             onclick="toggleCardSelection(${i})"></div>`;
+                            };
+
+                            return rows.map((row, rowIdx) => {
+                                const style = rowIdx === 0 ? 'justify-content:center;' : 'justify-content:center;margin-top:-30px;';
+                                const startIdx = rowIdx * CARDS_PER_ROW;
+                                return `<div class="cards-row" style="${style}">${row.map((card, i) => renderCard(card, startIdx + i)).join('')}</div>`;
+                            }).join('');
+                        })()}
+                        </div>
+                        <div class="player-label" style="margin-top:15px;text-align:center;">
+                            ${p.name} (나)
+                            <span class="card-count ${p.hand.length === 1 ? 'warning' : ''}">${p.hand.length}장</span>
+                        </div>
+                    `;
+                } else {
+                    // 상대 카드 (뒷면) - 라벨을 카드 아래로 이동
+                    slotEl.innerHTML = `
+                        <div class="player-area opponent-area ${isCurrent ? 'current-turn' : ''}">
+                            <div class="cards-row">
+                                ${p.hand.map(() => `<div class="card card-back opponent-card"></div>`).join('')}
+                            </div>
+                        </div>
+                        <div class="player-label" style="margin-top:8px;text-align:center;">
+                            ${p.name}
+                            <span class="card-count ${p.hand.length === 1 ? 'warning' : ''}">${p.hand.length}장</span>
+                        </div>
+                    `;
+                }
+            });
+
+            // 버린 카드 표시 (최근 3장만)
+            const discardEl = document.getElementById('discard-cards');
+            const discardCards = gameState.discardPile.slice(-3);
+            discardEl.innerHTML = discardCards.map((card, i) => {
+                const isTop = i === discardCards.length - 1;
+
+                let valueClass = `val-${card.value}`;
+                if (card.symbol) valueClass += ` ${card.symbol}`;
+
+                return `
+                    <div class="card ${card.suit} ${valueClass}"
+                         style="width:60px;height:85px;margin-left:${i === 0 ? 0 : -45}px;position:relative;z-index:${i + 10};box-shadow:-2px 0 5px rgba(0,0,0,0.3);">
+                    </div>
+                `;
+            }).join('');
+
+            // 덱 하이라이트
+            const deckEl = document.querySelector('.deck');
+            if (deckEl) deckEl.classList.remove('highlight');
+
+            // 덱 이미지 강제 적용 (CSS 우선순위 문제 해결)
+            const deckCardBack = document.querySelector('.deck .card-back');
+            if (deckCardBack) {
+                deckCardBack.style.position = 'absolute';
+                deckCardBack.style.width = '100%';
+                deckCardBack.style.height = '100%';
+                deckCardBack.style.background = "url('cards/card_back_custom.jpg?v=1') center/cover no-repeat";
+                deckCardBack.style.borderRadius = "8px";
+            }
+
+            if (currentPlayer && currentPlayer.isMe) {
+                const myHandInfo = players.find(p => p.isMe);
+                if (myHandInfo && myHandInfo.hand) {
+                    const hasPlayable = myHandInfo.hand.some(card => canPlayCard(card));
+                    if (!hasPlayable && deckEl) {
+                        deckEl.classList.add('highlight');
+                    }
+                }
+            }
+
+            // 액션 버튼
+            document.getElementById('action-buttons').style.display = selectedCards.length > 0 ? 'flex' : 'none';
+
+            // 메시지
+            if (gameState.attackStack > 0 && isMyTurn) {
+                setMessage(`⚔️ ${gameState.attackStack}장 공격!`, 'attack');
+            } else if (isMyTurn) {
+                setMessage('당신의 턴입니다');
+            } else {
+                const currentP = players[gameState.currentPlayerIndex];
+                setMessage(`${currentP ? currentP.name : ''}의 턴...`);
+            }
+
+            // 내 턴으로 바뀌었을 때 알림음 재생
+            if (isMyTurn && lastTurnIndex !== gameState.currentPlayerIndex) {
+                playTurnSound();
+            }
+            lastTurnIndex = gameState.currentPlayerIndex;
+        }
+
+        function setMessage(text, type = '') {
+            const msgBox = document.getElementById('message');
+            msgBox.textContent = text;
+            msgBox.className = 'message-box' + (type ? ' ' + type : '');
+        }
+
+        function showGameResult(winnerId, playersData) {
+            // 내 카드 영역 숨기기 (게임 종료 시 버튼과 겹침 방지)
+            const bottomSlot = document.getElementById('slot-bottom');
+            if (bottomSlot) bottomSlot.style.display = 'none';
+
+            const winnerData = playersData[winnerId];
+            const winnerName = winnerData ? winnerData.name : '승자';
+            const isMe = winnerId === myPlayerId;
+
+            // 승패 사운드 재생
+            if (!isMe) {
+                playGameOverSound();
+            }
+
+            let resultHtml = `
+                <div style="text-align:center;margin-bottom:20px;">
+                    <h2>🏆 게임 종료!</h2>
+                    <div style="font-size:1.5rem;margin:15px 0;color:#fbbf24;">
+                        ${isMe ? '🎉승리했습니다🥳' : '패배하였습니다...😢'}
+                    </div>
+                </div>
+                ${!isHost ? `
+                <button class="btn" style="width:100%;margin-top:15px;background-color:#4b5563;cursor:default;" disabled>
+                    ⏳ 방장의 재시작을 기다리는 중...
+                </button>
+                ` : ''}
+                <button class="btn btn-primary" style="width:100%;margin-top:10px;background-color:#6b7280;position:relative;z-index:9999;" onclick="location.reload()">
+                    🚪 대기실로 나가기
+                </button>
+                ${isHost ? `
+                <button class="btn btn-primary" style="width:100%;margin-top:10px;position:relative;z-index:9999;" onclick="restartGame()">
+                    🔄 게임 재시작 (승자 선)
+                </button>
+                ` : ''}
+            `;
+
+            document.getElementById('message').innerHTML = resultHtml;
+            document.getElementById('message').style.minWidth = '280px';
+            document.getElementById('action-buttons').style.display = 'none';
+        }
+
+        function canPlayCard(card) {
+            const currentPlayer = players[gameState.currentPlayerIndex];
+            if (!currentPlayer || !currentPlayer.isMe) return false;
+
+            if (gameState.attackStack > 0) {
+                return canDefendWith(card);
+            }
+
+            const topCard = gameState.discardPile[gameState.discardPile.length - 1];
+
+            // 조커 공격 피해 후 아무 카드나 낼 수 있음
+            if (gameState.currentSuit === 'any') return true;
+
+            if (card.suit === 'black-joker' || card.suit === 'color-joker') return true;
+            if (card.suit === gameState.currentSuit) return true;
+            if (card.value === topCard.value) return true;
+
+            return false;
+        }
+
+        function canDefendWith(card) {
+            const attackType = gameState.attackType;
+            if (!attackType) return true;
+
+            if (attackType === '2') {
+                if (card.value === '2') return true;
+                if (card.value === 'A' && card.suit === gameState.currentSuit) return true;
+                if (card.suit === 'black-joker' || card.suit === 'color-joker') return true;
+                return false;
+            }
+            if (attackType === 'A') {
+                if (card.value === 'A') return true;
+                if (card.suit === 'black-joker' || card.suit === 'color-joker') return true;
+                return false;
+            }
+            if (attackType === 'black-joker') {
+                if (card.value === 'A' && card.suit === 'spade') return true;
+                if (card.suit === 'black-joker' || card.suit === 'color-joker') return true;
+                return false;
+            }
+            if (attackType === 'color-joker') {
+                if (card.value === 'A' && card.suit === 'spade') return true;
+                if (card.suit === 'black-joker' || card.suit === 'color-joker') return true;
+                return false;
+            }
+            return false;
+        }
+
+        function toggleCardSelection(index) {
+            const currentPlayer = players[gameState.currentPlayerIndex];
+            if (!currentPlayer || !currentPlayer.isMe) return;
+
+            const card = currentPlayer.hand[index];
+
+            const idx = selectedCards.indexOf(index);
+            if (idx > -1) {
+                // 이미 선택된 카드 해제
+                selectedCards.splice(idx, 1);
+            } else {
+                if (selectedCards.length > 0) {
+                    // 이미 선택된 카드가 있으면 같은 숫자만 허용
+                    const firstCard = currentPlayer.hand[selectedCards[0]];
+                    if (card.value !== firstCard.value) {
+                        alert('같은 숫자의 카드만 함께 낼 수 있습니다!');
+                        return;
+                    }
+                    selectedCards.push(index);
+                } else {
+                    // 첫 번째 카드는 플레이 가능해야 함
+                    if (!canPlayCard(card)) return;
+                    selectedCards.push(index);
+                }
+            }
+            render();
+        }
+
+        function clearSelection() {
+            // 문양 선택 팝업 닫기
+            document.getElementById('suit-selector').style.display = 'none';
+
+            selectedCards = [];
+            if (isSinglePlayer) {
+                renderSingle();
+            } else {
+                render();
+            }
+        }
+
+        // 온라인 무늬 선택
+
+        function selectSuitOnline(suit) {
+            document.getElementById('suit-selector').style.display = 'none';
+
+            if (window.pendingUpdate) {
+                const { newHand, newDiscardPile, newDeck, newAttackStack, newAttackType,
+                    newSkipTurns, newDirection, nextPlayerIndex } = window.pendingUpdate;
+
+                // 색상 적용된 알림 메시지 생성
+                const suitColors = { 'spade': '#000', 'heart': '#e11d48', 'diamond': '#e11d48', 'club': '#000' };
+                const suitNameText = { 'spade': '♠ 스페이드', 'heart': '♥ 하트', 'diamond': '♦ 다이아몬드', 'club': '♣ 클로버' };
+                const coloredSuit = `<span style="color:${suitColors[suit]};background:white;padding:2px 6px;border-radius:4px;">${suitNameText[suit]}</span>`;
+                const actionMsg = `${myNickname}님이 문양을 ${coloredSuit} (으)로 바꿨습니다!`;
+
+                updateGameState({
+                    deck: newDeck,
+                    discardPile: newDiscardPile,
+                    currentPlayerIndex: nextPlayerIndex,
+                    direction: newDirection,
+                    attackStack: newAttackStack,
+                    attackType: newAttackType,
+                    currentSuit: suit,
+                    skipTurns: 0,
+                    [`hands/${myPlayerId}`]: newHand,
+                    lastAction: actionMsg,
+                    lastActionId: Date.now()
+                });
+
+                window.pendingUpdate = null;
+            }
+        }
+
+        function drawCardOnline() {
+            const currentPlayer = players[gameState.currentPlayerIndex];
+            if (!currentPlayer || !currentPlayer.isMe) {
+                alert('당신의 턴이 아닙니다!');
+                return;
+            }
+
+            const myPlayer = players.find(p => p.isMe);
+            if (!myPlayer) return;
+
+            const cardsToDraw = gameState.attackStack > 0 ? gameState.attackStack : 1;
+            const newDeck = [...gameState.deck];
+            const newHand = [...myPlayer.hand];
+
+            for (let i = 0; i < cardsToDraw; i++) {
+                if (newDeck.length === 0) {
+                    // 덱 리셔플
+                    const topCard = gameState.discardPile[gameState.discardPile.length - 1];
+                    const reshuffled = gameState.discardPile.slice(0, -1);
+                    shuffle(reshuffled);
+                    newDeck.push(...reshuffled);
+                }
+                if (newDeck.length > 0) {
+                    const newCard = newDeck.pop();
+                    newCard.drawnAt = Date.now(); // 🆕 마킹
+                    newHand.push(newCard);
+                    playCardDrawSound(); // 소리 추가 (온라인)
+                }
+            }
+            sortHand(newHand); // 카드 정렬
+
+            // ⚠️ 2초 후 하이라이트 제거를 위해 리렌더링 (온라인)
+            setTimeout(() => {
+                render();
+            }, 2100);
+
+            // 다음 턴
+            let nextPlayerIndex = (gameState.currentPlayerIndex + gameState.direction + players.length) % players.length;
+
+            // 조커 공격 후 카드 먹으면 아무 카드나 낼 수 있음
+            const wasJokerAttack = gameState.attackType === 'black-joker' || gameState.attackType === 'color-joker';
+
+            // 파산 체크 (15장 초과)
+            const nextSuit = wasJokerAttack ? 'any' : gameState.currentSuit;
+            let isBankrupt = false;
+            let rank = null;
+            let winner = null;
+
+            if (newHand.length > 15) {
+                isBankrupt = true;
+                const activePlayers = players.filter(p => !p.isBankrupt && p.rank === null);
+                rank = activePlayers.length;
+                if (activePlayers.length - 1 === 1) {
+                    const survivor = activePlayers.find(p => p.id !== myPlayerId);
+                    if (survivor) winner = survivor.id;
+                }
+                alert('카드가 15장을 초과하여 파산했습니다! 😱');
+            }
+
+            const updates = {
+                deck: newDeck,
+                currentPlayerIndex: nextPlayerIndex,
+                attackStack: 0,
+                attackType: null,
+                currentSuit: nextSuit,
+                skipTurns: 0,
+                [`hands/${myPlayerId}`]: newHand
+            };
+
+            if (isBankrupt) {
+                updates[`players/${myPlayerId}/isBankrupt`] = true;
+                updates[`players/${myPlayerId}/rank`] = rank;
+            }
+            if (winner) {
+                updates.status = 'finished';
+                updates.winner = winner;
+            }
+
+            updateGameState(updates);
+        }
+
+        function updateGameState(updates) {
+            const gameStateRef = roomRef.child('gameState');
+            gameStateRef.update(updates);
+        }
+
+        // ==================== 싱글 플레이어 전용 함수들 ====================
+
+        function renderSingle() {
+            if (!isSinglePlayer) return render();
+
+            document.getElementById('direction').textContent = singlePlayerState.direction === 1 ? '⟳ 시계' : '⟲ 반시계';
+            document.getElementById('deck-count').textContent = `남은 카드 수: ${singlePlayerState.deck.length}`;
+
+            // 슬롯 초기화
+            ['top', 'left', 'right', 'bottom', 'top-left', 'top-right'].forEach(slot => {
+                const el = document.getElementById('slot-' + slot);
+                if (el) el.innerHTML = '';
+            });
+
+            const currentPlayer = players[singlePlayerState.currentPlayerIndex];
+            document.getElementById('turn-text').textContent = currentPlayer ? `${currentPlayer.name}의 턴` : '';
+
+            // 플레이어 렌더링
+            players.forEach((p, idx) => {
+                const slotEl = document.getElementById('slot-' + p.slot);
+                if (!slotEl) return;
+
+                const isCurrent = singlePlayerState.currentPlayerIndex === idx;
+
+                if (p.isHuman) {
+                    // 내 카드 (앞면) - 라벨을 녹색 테두리 밖으로 이동
+                    slotEl.innerHTML = `
+                        <div class="player-area ${isCurrent ? 'current-turn' : ''} ${p.isBankrupt ? 'bankrupt' : ''}">
+                            ${(() => {
+                            if (p.rank) return '';  // 이미 완료된 플레이어는 카드 안 보임
+                            const CARDS_PER_ROW = 6;
+                            const rows = [];
+                            for (let r = 0; r < Math.ceil(p.hand.length / CARDS_PER_ROW); r++) {
+                                rows.push(p.hand.slice(r * CARDS_PER_ROW, (r + 1) * CARDS_PER_ROW));
+                            }
+
+                            const renderCard = (card, i) => {
+                                const firstSelectedCard = selectedCards.length > 0 ? p.hand[selectedCards[0]] : null;
+                                const isSameValueAsSelected = firstSelectedCard && card.value === firstSelectedCard.value;
+                                const playable = isCurrent && (canPlayCardSingle(card) || isSameValueAsSelected);
+                                const selected = selectedCards.includes(i);
+                                const isNormalSuit = ['spade', 'heart', 'diamond', 'club'].includes(card.suit);
+                                const valueClass = isNormalSuit ? `val-${card.value}` : '';
+
+                                // 🆕 최근 드로우 효과 체크
+                                const isNew = card.drawnAt && (Date.now() - card.drawnAt < 2000);
+                                const newClass = isNew ? 'newly-drawn' : '';
+
+                                return `<div class="card ${card.suit} ${valueClass} ${playable ? 'playable' : ''} ${selected ? 'selected' : ''} ${newClass}"
+                                             onclick="toggleCardSelectionSingle(${i})"></div>`;
+                            };
+
+                            return rows.map((row, rowIdx) => {
+                                const style = rowIdx === 0 ? 'justify-content:center;' : 'justify-content:center;margin-top:-30px;';
+                                const startIdx = rowIdx * CARDS_PER_ROW;
+                                return `<div class="cards-row" style="${style}">${row.map((card, i) => renderCard(card, startIdx + i)).join('')}</div>`;
+                            }).join('');
+                        })()}
+                        </div>
+                        <div class="player-label" style="margin-top:15px;text-align:center;">
+                            ${p.name}
+                            <span class="card-count ${p.hand.length === 1 ? 'warning' : ''}">${p.hand.length}장</span>
+                            ${p.isBankrupt ? '<span style="background:#ef4444;padding:2px 6px;border-radius:5px;font-size:0.8rem;">파산</span>' : ''}
+                            ${p.rank ? `<span style="background:#4ade80;padding:2px 6px;border-radius:5px;font-size:0.8rem;">${p.rank}등</span>` : ''}
+                        </div>
+                    `;
+                } else {
+                    // AI 카드 (뒷면) - 라벨을 카드 아래로 이동
+                    slotEl.innerHTML = `
+                        <div class="player-area opponent-area ${isCurrent ? 'current-turn' : ''} ${p.isBankrupt ? 'bankrupt' : ''}">
+                            <!-- 등수/파산 배지 상단으로 이동 -->
+                            <div style="position:absolute; top:-15px; left:50%; transform:translateX(-50%); white-space:nowrap; z-index:5;">
+                                ${p.isBankrupt ? '<span style="background:#ef4444;padding:4px 8px;border-radius:15px;font-size:0.85rem;box-shadow:0 2px 5px rgba(0,0,0,0.3);">파산</span>' : ''}
+                                ${p.rank ? `<span style="background:#4ade80;padding:4px 8px;border-radius:15px;font-size:0.85rem;box-shadow:0 2px 5px rgba(0,0,0,0.3);color:#000;font-weight:bold;">${p.rank}등</span>` : ''}
+                            </div>
+                            
+                            <div class="cards-row">
+                                ${p.rank ? '' : p.hand.map(() => `<div class="card card-back opponent-card"></div>`).join('')}
+                            </div>
+                        </div>
+                        <div class="player-label" style="margin-top:8px;text-align:center;">
+                            ${p.name}
+                            <span class="card-count ${p.hand.length === 1 ? 'warning' : ''}">${p.hand.length}장</span>
+                        </div>
+                    `;
+                }
+            });
+
+            // 버린 카드 더미
+            const discardEl = document.getElementById('discard-cards');
+            const topCards = singlePlayerState.discardPile.slice(-3);
+            discardEl.innerHTML = topCards.map((card, idx) => {
+                const isTop = idx === topCards.length - 1;
+                const isNormalSuit = ['spade', 'heart', 'diamond', 'club'].includes(card.suit);
+                const valueClass = isNormalSuit ? `val-${card.value}` : '';
+                const opacity = '1'; // 투명도 제거
+                return `
+                    <div class="card ${card.suit} ${valueClass}"
+                         style="width:${isTop ? 60 : 45}px;height:${isTop ? 85 : 65}px;opacity:${opacity};cursor:default;position:relative;z-index:${idx + 10};">
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('action-buttons').style.display = selectedCards.length > 0 ? 'flex' : 'none';
+
+            // 낼 카드가 없으면 덱 하이라이트
+            const deckEl = document.querySelector('.deck');
+            if (deckEl) deckEl.classList.remove('highlight');
+
+            const currentP = players[singlePlayerState.currentPlayerIndex];
+            if (currentP && currentP.isHuman) {
+                const hasPlayable = currentP.hand.some(card => canPlayCardSingle(card));
+                if (!hasPlayable && deckEl) {
+                    deckEl.classList.add('highlight');
+                }
+            }
+        }
+
+        function canPlayCardSingle(card) {
+            if (singlePlayerState.attackStack > 0) {
+                return canDefendWithSingle(card);
+            }
+            const topCard = singlePlayerState.discardPile[singlePlayerState.discardPile.length - 1];
+
+            // 조커 공격 피해 후 아무 카드나 낼 수 있음
+            if (singlePlayerState.currentSuit === 'any') return true;
+
+            if (card.suit === 'black-joker' || card.suit === 'color-joker') return true;
+            if (card.suit === singlePlayerState.currentSuit) return true;
+            if (card.value === topCard.value) return true;
+            return false;
+        }
+
+        function canDefendWithSingle(card) {
+            const attackType = singlePlayerState.attackType;
+            if (!attackType) return true;
+
+            if (attackType === '2') {
+                if (card.value === '2') return true;
+                if (card.value === 'A' && card.suit === singlePlayerState.currentSuit) return true;
+                if (card.suit === 'black-joker' || card.suit === 'color-joker') return true;
+                return false;
+            }
+            if (attackType === 'A') {
+                if (card.value === 'A') return true;
+                if (card.suit === 'black-joker' || card.suit === 'color-joker') return true;
+                return false;
+            }
+            if (attackType === 'black-joker' || attackType === 'color-joker') {
+                if (card.value === 'A' && card.suit === 'spade') return true;
+                if (card.suit === 'black-joker' || card.suit === 'color-joker') return true;
+                return false;
+            }
+            return false;
+        }
+
+        function toggleCardSelectionSingle(index) {
+            const currentPlayer = players[singlePlayerState.currentPlayerIndex];
+            if (!currentPlayer || !currentPlayer.isHuman) return;
+
+            const card = currentPlayer.hand[index];
+
+            const idx = selectedCards.indexOf(index);
+            if (idx > -1) {
+                // 이미 선택된 카드 해제
+                selectedCards.splice(idx, 1);
+            } else {
+                if (selectedCards.length > 0) {
+                    // 이미 선택된 카드가 있으면 같은 숫자만 허용
+                    const firstCard = currentPlayer.hand[selectedCards[0]];
+                    if (card.value !== firstCard.value) {
+                        alert('같은 숫자의 카드만 함께 낼 수 있습니다!');
+                        return;
+                    }
+                    selectedCards.push(index);
+                } else {
+                    // 첫 번째 카드는 플레이 가능해야 함
+                    if (!canPlayCardSingle(card)) return;
+                    selectedCards.push(index);
+                }
+            }
+            renderSingle();
+        }
+
+        function playSelectedCardsOnline() {
+            if (isSinglePlayer) {
+                playSelectedCardsSingle();
+            } else {
+                playSelectedCardsOnlineOriginal();
+            }
+        }
+
+        function playSelectedCardsSingle() {
+            // 문양 선택 팝업이 열려있으면 닫기 (이전 7카드 선택 후 다른 카드 낼 때 버그 방지)
+            document.getElementById('suit-selector').style.display = 'none';
+
+            if (selectedCards.length === 0) return;
+
+            const player = players.find(p => p.isHuman);
+            const cards = selectedCards.map(i => player.hand[i]);
+
+            selectedCards.sort((a, b) => b - a).forEach(i => player.hand.splice(i, 1));
+            cards.forEach(card => singlePlayerState.discardPile.push(card));
+            playCardPlaySound(); // 소리 추가 (싱글 내부)
+
+            const lastCard = cards[cards.length - 1];
+            if (lastCard.suit !== 'black-joker' && lastCard.suit !== 'color-joker') {
+                singlePlayerState.currentSuit = lastCard.suit;
+            }
+
+            handleSpecialCardsSingle(cards);
+            selectedCards = [];
+
+            if (player.hand.length === 0) {
+                const currentRank = players.filter(p => p.rank !== null).length + 1;
+                player.rank = currentRank;
+                setMessage(`🎉 ${player.name}님이 ${currentRank}등으로 탈출!`);
+                renderSingle();
+                if (isGameOverSingle()) {
+                    setTimeout(endGameSingle, 1500);
+                } else {
+                    setTimeout(nextTurnSingle, 1500);
+                }
+                return;
+            }
+
+            if (cards[0].value === '7' && cards[0].suit !== 'black-joker' && cards[0].suit !== 'color-joker') {
+                document.getElementById('suit-selector').style.display = 'flex';
+                return;
+            }
+
+            nextTurnSingle();
+        }
+
+        function handleSpecialCardsSingle(cards) {
+            const value = cards[0].value;
+            const count = cards.length;
+
+            // 조커 감지 (온라인과 동일하게 some() 사용)
+            const hasBlackJoker = cards.some(c => c.suit === 'black-joker');
+            const hasColorJoker = cards.some(c => c.suit === 'color-joker');
+
+            if (value === '2') {
+                singlePlayerState.attackStack += 2 * count;
+                singlePlayerState.attackType = '2';
+                setMessage(`⚔️ +${2 * count}장! (누적: ${singlePlayerState.attackStack}장)`, 'attack');
+            } else if (value === 'A') {
+                singlePlayerState.attackStack += 3 * count;
+                singlePlayerState.attackType = 'A';
+                setMessage(`⚔️ +${3 * count}장! (누적: ${singlePlayerState.attackStack}장)`, 'attack');
+            } else if (hasBlackJoker) {
+                singlePlayerState.attackStack += 5 * count;
+                singlePlayerState.attackType = 'black-joker';
+                setMessage(`🖤 +${5 * count}장!`, 'attack');
+            } else if (hasColorJoker) {
+                singlePlayerState.attackStack += 7 * count;
+                singlePlayerState.attackType = 'color-joker';
+                setMessage(`🌈 +${7 * count}장!`, 'attack');
+            } else if (value === 'K') {
+                const activeCount = players.filter(p => !p.isBankrupt && p.rank === null).length;
+                let kSkips = 0;
+
+                if (activeCount <= 2) {
+                    // 2인: 짝수 장(내 턴), 홀수 장(상대 턴)
+                    kSkips = (count * 2);
+                    if (count % 2 === 0) kSkips -= 1;
+                } else {
+                    // 3인 이상: 1장당 3칸 이동 (2명 건너뛰기)
+                    // 기본 1칸 + 스킵 (count*3 - 1)
+                    kSkips = (count * 3) - 1;
+                }
+
+                singlePlayerState.skipTurns += kSkips;
+                singlePlayerState.attackStack = 0;
+                singlePlayerState.attackType = null;
+                setMessage(`👑 ${kSkips}턴 스킵!`);
+            } else if (value === 'Q') {
+                const activeCount = players.filter(p => !p.isBankrupt && p.rank === null).length;
+                if (activeCount <= 2) {
+                    singlePlayerState.skipTurns += 1 * count;
+                    setMessage(`👸 ${count}턴 스킵!`);
+                } else if (count % 2 === 1) {
+                    singlePlayerState.direction *= -1;
+                    setMessage(`👸 방향 전환! ${singlePlayerState.direction === 1 ? '⟳' : '⟲'}`);
+                }
+                singlePlayerState.attackStack = 0;
+                singlePlayerState.attackType = null;
+            } else if (value === 'J') {
+                const activeCount = players.filter(p => !p.isBankrupt && p.rank === null).length;
+                let jSkips = 0;
+
+                if (activeCount <= 2) {
+                    jSkips = count; // 2인은 1장당 1스킵 (기존 유지)
+                } else {
+                    // 3인 이상: 1장당 2칸 이동 (1명 건너뛰기)
+                    // 기본 1칸 + 스킵 (count*2 - 1)
+                    jSkips = (count * 2) - 1;
+                }
+
+                singlePlayerState.skipTurns += jSkips;
+                singlePlayerState.attackStack = 0;
+                singlePlayerState.attackType = null;
+                setMessage(`🎭 ${jSkips}턴 스킵!`);
+            } else {
+                // 일반 카드도 공격 초기화
+                singlePlayerState.attackStack = 0;
+                singlePlayerState.attackType = null;
+            }
+        }
+
+        function selectSuitOnline(suit) {
+            if (isSinglePlayer) {
+                singlePlayerState.currentSuit = suit;
+                document.getElementById('suit-selector').style.display = 'none';
+
+                // 무늬 변경 알림 팝업 (색상 적용)
+                const suitColors = { 'spade': '#000', 'heart': '#e11d48', 'diamond': '#e11d48', 'club': '#000' };
+                const suitNameText = { 'spade': '♠ 스페이드', 'heart': '♥ 하트', 'diamond': '♦ 다이아몬드', 'club': '♣ 클로버' };
+                const coloredSuit = `<span style="color:${suitColors[suit]};background:white;padding:2px 6px;border-radius:4px;">${suitNameText[suit]}</span>`;
+                const humanPlayer = players.find(p => p.isHuman);
+                const playerName = humanPlayer ? humanPlayer.name : '플레이어';
+                showNotification(`${playerName}님이 문양을 ${coloredSuit} (으)로 바꿨습니다!`);
+                playSuitChangeSound(); // 소리 추가
+
+                setMessage(`♻️ ${suitSymbols[suit]} 선택!`);
+
+                // 7카드로 마지막 카드를 냈을 때 승리 체크 (온라인과 동일)
+                if (humanPlayer && humanPlayer.hand.length === 0) {
+                    const currentRank = players.filter(p => p.rank !== null).length + 1;
+                    humanPlayer.rank = currentRank;
+                    setMessage(`🎉 ${humanPlayer.name}님이 ${currentRank}등으로 탈출!`);
+                    renderSingle();
+                    if (isGameOverSingle()) {
+                        setTimeout(endGameSingle, 1500);
+                    } else {
+                        setTimeout(nextTurnSingle, 1500);
+                    }
+                    return;
+                }
+
+                nextTurnSingle();
+            } else {
+                selectSuitOnlineOriginal(suit);
+            }
+        }
+
+        function drawCardOnline() {
+            if (isSinglePlayer) {
+                drawCardSingle();
+            } else {
+                drawCardOnlineOriginal();
+            }
+        }
+
+        function drawCardSingle() {
+            const player = players.find(p => p.isHuman);
+            if (!player || player.isBankrupt) return;
+            if (singlePlayerState.currentPlayerIndex !== players.indexOf(player)) {
+                alert('당신의 턴이 아닙니다!');
+                return;
+            }
+            drawCardsForPlayerSingle(player);
+            nextTurnSingle();
+        }
+
+        function drawCardsForPlayerSingle(player) {
+            const count = singlePlayerState.attackStack > 0 ? singlePlayerState.attackStack : 1;
+
+            for (let i = 0; i < count; i++) {
+                if (singlePlayerState.deck.length === 0) reshuffleDeckSingle();
+                if (singlePlayerState.deck.length > 0) {
+                    const newCard = singlePlayerState.deck.pop();
+                    // 🆕 새 카드 마킹 (timestamp)
+                    newCard.drawnAt = Date.now();
+                    player.hand.push(newCard);
+                    if (player.isHuman) playCardDrawSound(); // 소리 추가
+                }
+            }
+            sortHand(player.hand); // 카드 정렬
+
+            // ⚠️ 2초 후 하이라이트 제거를 위해 리렌더링
+            setTimeout(() => {
+                renderSingle();
+            }, 2100);
+
+            if (singlePlayerState.attackStack > 0) {
+                // 조커 공격 후 카드를 먹으면 다음 사람은 아무 카드나 낼 수 있음
+                const wasJokerAttack = singlePlayerState.attackType === 'black-joker' || singlePlayerState.attackType === 'color-joker';
+                if (wasJokerAttack) {
+                    singlePlayerState.currentSuit = 'any';
+                }
+                setMessage(`💥 ${player.name} ${singlePlayerState.attackStack}장 뽑음!`);
+                singlePlayerState.attackStack = 0;
+                singlePlayerState.attackType = null;
+            } else {
+                setMessage(`📥 ${player.name} 1장 뽑음`);
+            }
+
+            if (player.hand.length > BANKRUPT_LIMIT) {
+                player.isBankrupt = true;
+                singlePlayerState.deck.push(...player.hand);
+                player.hand = [];
+                shuffle(singlePlayerState.deck);
+                setMessage(`💀 ${player.name} 파산!`, 'attack');
+            }
+        }
+
+        function reshuffleDeckSingle() {
+            if (singlePlayerState.discardPile.length <= 1) return;
+            const topCard = singlePlayerState.discardPile.pop();
+            shuffle(singlePlayerState.discardPile);
+            singlePlayerState.deck.push(...singlePlayerState.discardPile);
+            singlePlayerState.discardPile = [topCard];
+        }
+
+        function isGameOverSingle() {
+            const remaining = players.filter(p => !p.isBankrupt && p.rank === null);
+            return remaining.length <= 1;
+        }
+
+        function nextTurnSingle() {
+            // 턴 변경 시 문양 선택 팝업 닫기
+            document.getElementById('suit-selector').style.display = 'none';
+            selectedCards = [];  // 선택 카드도 초기화
+
+            const activePlayers = players.filter(p => !p.isBankrupt && p.rank === null);
+
+            if (activePlayers.length <= 1) {
+                if (activePlayers.length === 1 && activePlayers[0].rank === null) {
+                    const nextRank = players.filter(p => p.rank !== null).length + 1;
+                    activePlayers[0].rank = nextRank;
+                }
+                endGameSingle();
+                return;
+            }
+
+            // 2명 남았을 때 스킵 강제 고정 로직 제거 (K카드별 로직으로 대체)
+
+            while (singlePlayerState.skipTurns > 0) {
+                singlePlayerState.currentPlayerIndex = (singlePlayerState.currentPlayerIndex + singlePlayerState.direction + players.length) % players.length;
+                while (players[singlePlayerState.currentPlayerIndex].isBankrupt || players[singlePlayerState.currentPlayerIndex].rank !== null) {
+                    singlePlayerState.currentPlayerIndex = (singlePlayerState.currentPlayerIndex + singlePlayerState.direction + players.length) % players.length;
+                }
+                singlePlayerState.skipTurns--;
+            }
+
+            singlePlayerState.currentPlayerIndex = (singlePlayerState.currentPlayerIndex + singlePlayerState.direction + players.length) % players.length;
+
+            let safety = 0;
+            while ((players[singlePlayerState.currentPlayerIndex].isBankrupt || players[singlePlayerState.currentPlayerIndex].rank !== null) && safety < players.length) {
+                singlePlayerState.currentPlayerIndex = (singlePlayerState.currentPlayerIndex + singlePlayerState.direction + players.length) % players.length;
+                safety++;
+            }
+
+            if (isGameOverSingle()) {
+                const survivor = players.find(p => !p.isBankrupt && p.rank === null);
+                if (survivor) survivor.rank = players.filter(p => p.rank !== null).length + 1;
+                endGameSingle();
+                return;
+            }
+
+            renderSingle();
+
+            const cp = players[singlePlayerState.currentPlayerIndex];
+            if (cp.isHuman) {
+                // 내 턴 알림음 재생 (온라인과 동일)
+                playTurnSound();
+
+                if (singlePlayerState.attackStack > 0) {
+                    setMessage(`⚔️ ${singlePlayerState.attackStack}장 공격! 방어 또는 뽑기`, 'attack');
+                } else {
+                    setMessage('당신의 턴');
+                }
+            } else {
+                setMessage(`🤖 ${cp.name} 생각 중...`);
+                const delay = 1000 + Math.random() * 2000;
+
+                // 왓치독 설정 (5초 안에 AI 턴 안 끝나면 강제 진행)
+                aiTurnWatchdog = setTimeout(() => {
+                    console.error('🚨 AI Turn Watchdog Triggered! Forcing next turn...');
+                    const player = players[singlePlayerState.currentPlayerIndex];
+                    if (player && !player.isHuman) {
+                        drawCardsForPlayerSingle(player);
+                        renderSingle();
+                    }
+                    nextTurnSingle();
+                }, 5000);
+
+                setTimeout(aiTurnSingle, delay);
+            }
+        }
+
+        // === 카드 카운팅 AI 헬퍼 ===
+        function getCardCounts() {
+            // 덱 구성: 각 숫자 4장씩 (스페이드/하트/다이아/클로버), 조커 2장
+            const totalCards = {
+                '2': 4, '3': 4, '4': 4, '5': 4, '6': 4, '7': 4, '8': 4, '9': 4, '10': 4,
+                'J': 4, 'Q': 4, 'K': 4, 'A': 4, 'JOKER': 2
+            };
+            const suitTotal = { 'spade': 13, 'heart': 13, 'diamond': 13, 'club': 13 };
+
+            // 버린 카드 집계
+            const playedValues = {};
+            const playedSuits = {};
+
+            singlePlayerState.discardPile.forEach(card => {
+                const val = card.value;
+                playedValues[val] = (playedValues[val] || 0) + 1;
+
+                if (card.suit !== 'black-joker' && card.suit !== 'color-joker') {
+                    playedSuits[card.suit] = (playedSuits[card.suit] || 0) + 1;
+                }
+            });
+
+            // 남은 카드 계산
+            const remainingValues = {};
+            for (let val in totalCards) {
+                remainingValues[val] = totalCards[val] - (playedValues[val] || 0);
+            }
+
+            const remainingSuits = {};
+            for (let suit in suitTotal) {
+                remainingSuits[suit] = suitTotal[suit] - (playedSuits[suit] || 0);
+            }
+
+            return { remainingValues, remainingSuits, playedValues, playedSuits };
+        }
+
+        let aiTurnWatchdog = null; // AI 턴 안전장치
+
+        function aiTurnSingle() {
+            // 왓치독 해제 (정상 실행)
+            if (aiTurnWatchdog) {
+                clearTimeout(aiTurnWatchdog);
+                aiTurnWatchdog = null;
+            }
+
+            try {
+                const player = players[singlePlayerState.currentPlayerIndex];
+                if (!player || player.isBankrupt || player.isHuman || player.rank !== null) {
+                    nextTurnSingle();
+                    return;
+                }
+
+                let playable = [];
+                for (let i = 0; i < player.hand.length; i++) {
+                    if (canPlayCardSingle(player.hand[i])) {
+                        playable.push({ index: i, card: player.hand[i] });
+                    }
+                }
+
+                if (playable.length === 0) {
+                    drawCardsForPlayerSingle(player);
+                    renderSingle();
+                    setTimeout(nextTurnSingle, 500);
+                    return;
+                }
+
+                // === 난이도별 AI 전략 선택 ===
+                let chosenCards = [];
+
+                if (aiDifficulty === 'beginner') {
+                    // 🟢 초급: 랜덤 선택 (가장 쉬움)
+                    chosenCards = [playable[Math.floor(Math.random() * playable.length)]];
+                } else if (aiDifficulty === 'intermediate') {
+                    // 🟡 중급: 스마트 AI (일반 카드 우선, 특수카드 보존)
+                    chosenCards = selectSmartAI(player, playable);
+                } else {
+                    // 🟠 고급: 카운팅 AI (현재 로직)
+                    chosenCards = selectCountingAI(player, playable);
+                }
+
+                // 최종 결과 카드 내기
+                executeAICardPlay(player, chosenCards, playable);
+
+            } catch (e) {
+                console.error('🚨 AI Turn Error:', e);
+                const player = players[singlePlayerState.currentPlayerIndex];
+                if (player && !player.isHuman) {
+                    drawCardsForPlayerSingle(player);
+                    renderSingle();
+                }
+                setTimeout(nextTurnSingle, 1000);
+            }
+        }
+
+        // 🟡 중급: 스마트 AI (일반 카드 우선, 특수카드 보존)
+        function selectSmartAI(player, playable) {
+            const jokers = playable.filter(pc => pc.card.suit === 'black-joker' || pc.card.suit === 'color-joker');
+            const aces = playable.filter(pc => pc.card.value === 'A');
+            const twos = playable.filter(pc => pc.card.value === '2');
+            const sevens = playable.filter(pc => pc.card.value === '7');
+            const normals = playable.filter(pc =>
+                pc.card.suit !== 'black-joker' &&
+                pc.card.suit !== 'color-joker' &&
+                pc.card.value !== 'A' &&
+                pc.card.value !== '2' &&
+                pc.card.value !== '7'
+            );
+
+            const isUnderAttack = singlePlayerState.attackStack > 0;
+            const myCardCount = player.hand.length;
+            const isEmergency = myCardCount <= 3;
+            const canWinNow = myCardCount === 1;
+
+            let chosenCards = [];
+
+            if (isUnderAttack) {
+                if (twos.length > 0) chosenCards = [twos[0]];
+                else if (aces.length > 0) chosenCards = [aces[0]];
+                else if (jokers.length > 0) chosenCards = [jokers[0]];
+            } else if (canWinNow) {
+                chosenCards = [playable[0]];
+            } else if (normals.length > 0) {
+                // 같은 숫자 그룹 중 가장 많은 것
+                const groups = {};
+                normals.forEach(pc => {
+                    const val = pc.card.value;
+                    if (!groups[val]) groups[val] = [];
+                    groups[val].push(pc);
+                });
+                let best = null;
+                for (let val in groups) {
+                    if (!best || groups[val].length > best.length) best = groups[val];
+                }
+                chosenCards = best;
+            } else if (sevens.length > 0 && !isEmergency) {
+                chosenCards = [sevens[0]];
+            } else if (twos.length > 0) {
+                chosenCards = [twos[0]];
+            } else if (aces.length > 0 && isEmergency) {
+                chosenCards = [aces[0]];
+            } else if (jokers.length > 0 && isEmergency) {
+                chosenCards = [jokers[0]];
+            } else {
+                chosenCards = [playable[0]];
+            }
+
+            // 같은 숫자 묶기
+            if (chosenCards.length > 0) {
+                const val = chosenCards[0].card.value;
+                const same = playable.filter(pc => pc.card.value === val);
+                if (same.length > chosenCards.length) chosenCards = same;
+            }
+
+            return chosenCards.length > 0 ? chosenCards : [playable[0]];
+        }
+
+        // 🟠 고급: 카운팅 AI (상대 패 수 & 남은 카드 분석)
+        function selectCountingAI(player, playable) {
+            const cardCounts = getCardCounts();
+
+            const jokers = playable.filter(pc => pc.card.suit === 'black-joker' || pc.card.suit === 'color-joker');
+            const aces = playable.filter(pc => pc.card.value === 'A');
+            const twos = playable.filter(pc => pc.card.value === '2');
+            const sevens = playable.filter(pc => pc.card.value === '7');
+            const normals = playable.filter(pc =>
+                pc.card.suit !== 'black-joker' &&
+                pc.card.suit !== 'color-joker' &&
+                pc.card.value !== 'A' &&
+                pc.card.value !== '2' &&
+                pc.card.value !== '7'
+            );
+
+            const myCardCount = player.hand.length;
+            const humanPlayer = players.find(p => p.isHuman);
+            const humanCardCount = humanPlayer ? humanPlayer.hand.length : 99;
+            const isUnderAttack = singlePlayerState.attackStack > 0;
+            const isEmergency = myCardCount <= 3;
+            const canWinNow = myCardCount === 1;
+
+            // 카운팅 기반 추가 분석
+            const remaining2s = cardCounts.remainingValues['2'] || 0;
+            const remainingAs = cardCounts.remainingValues['A'] || 0;
+            const remainingJokers = cardCounts.remainingValues['JOKER'] || 0;
+            const playerLikelyHasDefense = (remaining2s + remainingAs + remainingJokers) > 2;
+
+            let chosenCards = [];
+
+            // 3. 전략적 카드 선택
+            if (isUnderAttack) {
+                // 공격 받는 중 -> 방어 카드 사용 (단, 조커는 최후의 수단)
+                if (twos.length > 0) {
+                    chosenCards = [twos[0]];
+                } else if (aces.length > 0) {
+                    chosenCards = [aces[0]];
+                } else if (jokers.length > 0) {
+                    chosenCards = [jokers[0]];
+                }
+            } else if (canWinNow) {
+                // 승리 가능! -> 아무 카드나 내기
+                chosenCards = [playable[0]];
+            } else if (humanCardCount <= 2 && (twos.length > 0 || jokers.length > 0)) {
+                // 플레이어가 카드 적을 때 -> 공격!
+                // 카운팅: 방어 카드가 많이 남아있으면 공격 자제
+                if (!playerLikelyHasDefense || humanCardCount === 1) {
+                    if (twos.length > 0) {
+                        chosenCards = twos;
+                    } else if (jokers.length > 0) {
+                        chosenCards = [jokers[0]];
+                    }
+                }
+            }
+
+            // 위 조건에서 선택 안됐으면 일반 전략
+            if (chosenCards.length === 0) {
+                if (normals.length > 0) {
+                    // 일반 카드 우선 사용
+                    const normalGroups = {};
+                    normals.forEach(pc => {
+                        const val = pc.card.value;
+                        if (!normalGroups[val]) normalGroups[val] = [];
+                        normalGroups[val].push(pc);
+                    });
+
+                    let bestNormalGroup = null;
+                    for (let val in normalGroups) {
+                        if (!bestNormalGroup || normalGroups[val].length > bestNormalGroup.length) {
+                            bestNormalGroup = normalGroups[val];
+                        }
+                    }
+                    chosenCards = bestNormalGroup;
+                } else if (sevens.length > 0 && !isEmergency) {
+                    chosenCards = [sevens[0]];
+                } else if (twos.length > 0) {
+                    chosenCards = [twos[0]];
+                } else if (aces.length > 0 && isEmergency) {
+                    chosenCards = [aces[0]];
+                } else if (jokers.length > 0 && isEmergency) {
+                    chosenCards = [jokers[0]];
+                } else {
+                    chosenCards = [playable[0]];
+                }
+            }
+
+            // 같은 숫자 카드 묶기
+            if (chosenCards.length > 0) {
+                const chosenValue = chosenCards[0].card.value;
+                const sameValueCards = playable.filter(pc => pc.card.value === chosenValue);
+                if (sameValueCards.length > chosenCards.length) {
+                    chosenCards = sameValueCards;
+                }
+            }
+
+            // 안전장치
+            if (chosenCards.length === 0) {
+                chosenCards = [playable[0]];
+            }
+
+            return chosenCards;
+        }
+
+        // 카드 내기 실행 (공통 로직)
+        function executeAICardPlay(player, chosenCards, playable) {
+            try {
+                if (!chosenCards || chosenCards.length === 0) {
+                    chosenCards = [playable[0]];
+                }
+
+                const bestGroup = chosenCards;
+                const indices = bestGroup.map(pc => pc.index).sort((a, b) => b - a);
+                const cards = indices.map(i => player.hand[i]);
+
+                indices.forEach(i => player.hand.splice(i, 1));
+                cards.forEach(card => singlePlayerState.discardPile.push(card));
+                playCardPlaySound();
+
+                const lastCard = cards[cards.length - 1];
+                if (lastCard.suit !== 'black-joker' && lastCard.suit !== 'color-joker') {
+                    singlePlayerState.currentSuit = lastCard.suit;
+                }
+
+                // AI가 7을 냈을 때 무늬 선택
+                if (lastCard.value === '7') {
+                    const suitCounts = {};
+                    player.hand.forEach(c => {
+                        if (c.suit !== 'black-joker' && c.suit !== 'color-joker') {
+                            suitCounts[c.suit] = (suitCounts[c.suit] || 0) + 1;
+                        }
+                    });
+
+                    let bestSuit = singlePlayerState.currentSuit || 'spade';
+                    let maxCount = 0;
+                    for (let suit in suitCounts) {
+                        if (suitCounts[suit] > maxCount) {
+                            maxCount = suitCounts[suit];
+                            bestSuit = suit;
+                        }
+                    }
+                    singlePlayerState.currentSuit = bestSuit;
+
+                    const suitColors = { 'spade': '#000', 'heart': '#e11d48', 'diamond': '#e11d48', 'club': '#000' };
+                    const suitNameText = { 'spade': '♠ 스페이드', 'heart': '♥ 하트', 'diamond': '♦ 다이아몬드', 'club': '♣ 클로버' };
+                    const coloredSuit = `<span style="color:${suitColors[bestSuit]};background:white;padding:2px 6px;border-radius:4px;">${suitNameText[bestSuit]}</span>`;
+                    showNotification(`${player.name}님이 문양을 ${coloredSuit} (으)로 바꿨습니다!`);
+                    playSuitChangeSound();
+                }
+
+                handleSpecialCardsSingle(cards);
+
+                if (player.hand.length === 0) {
+                    const currentRank = players.filter(p => p.rank !== null).length + 1;
+                    player.rank = currentRank;
+                    setMessage(`🎊 ${player.name}님이 ${currentRank}등으로 탈출!`);
+                    renderSingle();
+                    if (isGameOverSingle()) {
+                        setTimeout(endGameSingle, 1500);
+                    } else {
+                        setTimeout(nextTurnSingle, 1500);
+                    }
+                    return;
+                }
+
+                renderSingle();
+                nextTurnSingle();
+            } catch (e) {
+                console.error('🚨 executeAICardPlay Error:', e);
+                if (player && !player.isHuman) {
+                    drawCardsForPlayerSingle(player);
+                }
+                renderSingle();
+                setTimeout(nextTurnSingle, 1000);
+            }
+        }
+
+
+        function endGameSingle() {
+            renderSingle();
+
+            // 내 카드 영역 숨기기 (게임 종료 시 버튼과 겹침 방지)
+            const bottomSlot = document.getElementById('slot-bottom');
+            if (bottomSlot) bottomSlot.style.display = 'none';
+            const sortedPlayers = [...players].sort((a, b) => {
+                if (a.rank !== null && b.rank !== null) return a.rank - b.rank;
+                if (a.rank !== null) return -1;
+                if (b.rank !== null) return 1;
+                return 0;
+            });
+
+            let rankHtml = '<div style="text-align:center;margin-bottom:20px;"><h2>🏆 게임 결과</h2></div>';
+            rankHtml += '<div style="background:rgba(0,0,0,0.3);padding:15px;border-radius:10px;">';
+            sortedPlayers.forEach(p => {
+                let status = p.rank ? `${p.rank}등` : (p.isBankrupt ? '파산' : '진행중');
+                let color = p.rank === 1 ? '#fbbf24' : (p.isBankrupt ? '#f87171' : 'white');
+                rankHtml += `<div style="padding:10px;border-bottom:1px solid rgba(255,255,255,0.1);color:${color};">
+                    <span style="font-weight:bold;width:50px;display:inline-block;">${status}</span>
+                    <span>${p.name}</span>
+                </div>`;
+            });
+            rankHtml += '</div>';
+            rankHtml += `
+            <div style="display:flex; flex-direction:column; gap:10px; margin-top:20px; margin-bottom:30px; position:relative; z-index:600;">
+                <button class="btn btn-primary" style="width:100%; position:relative; z-index:601;" onclick="restartSingleGame()">🔄 게임 재시작 (승자 선)</button>
+                <button class="btn btn-primary" style="width:100%; background-color:#6b7280; position:relative; z-index:601;" onclick="location.reload()">🚪 대기실로 나가기</button>
+            </div>
+            `;
+
+            document.getElementById('message').innerHTML = rankHtml;
+            document.getElementById('message').style.minWidth = '300px';
+        }
+
+        function restartSingleGame() {
+            // 내 카드 영역 다시 보이기
+            const bottomSlot = document.getElementById('slot-bottom');
+            if (bottomSlot) bottomSlot.style.display = '';
+
+            // 승자 확인 (1등)
+            const winner = players.find(p => p.rank === 1);
+            let startPlayerIndex = 0;
+            if (winner) {
+                startPlayerIndex = players.indexOf(winner);
+            }
+
+            // 플레이어 상태 초기화
+            players.forEach(p => {
+                p.hand = [];
+                p.isBankrupt = false;
+                p.rank = null;
+            });
+
+            // 덱 생성 및 셔플
+            singlePlayerState.deck = createDeck();
+            shuffle(singlePlayerState.deck);
+            playShuffleSound();
+
+            // 카드 분배
+            players.forEach(p => {
+                for (let i = 0; i < 5; i++) {
+                    p.hand.push(singlePlayerState.deck.pop());
+                }
+            });
+
+            // 첫 카드
+            let firstCard;
+            do {
+                firstCard = singlePlayerState.deck.pop();
+                if (isSpecialCard(firstCard)) {
+                    singlePlayerState.deck.unshift(firstCard);
+                } else {
+                    break;
+                }
+            } while (true);
+
+            // 상태 초기화
+            singlePlayerState.discardPile = [firstCard];
+            singlePlayerState.currentSuit = firstCard.suit;
+            singlePlayerState.currentPlayerIndex = startPlayerIndex;
+            singlePlayerState.direction = 1;
+            singlePlayerState.attackStack = 0;
+            singlePlayerState.attackType = null;
+            singlePlayerState.skipTurns = 0;
+
+            gameState = singlePlayerState; // 필요 시 동기화
+
+            renderSingle();
+
+            const currentPlayer = players[singlePlayerState.currentPlayerIndex];
+            setMessage(currentPlayer.isHuman ? '게임 시작! 당신의 턴입니다.' : `게임 시작! ${currentPlayer.name}의 턴입니다.`);
+
+            // 첫 턴이 AI라면 실행
+            if (!currentPlayer.isHuman) {
+                setTimeout(aiTurnSingle, 1000);
+            }
+        }
+
+        // 원본 온라인 함수 백업 (이름 변경용)
+        const playSelectedCardsOnlineOriginal = function () {
+            console.log('playSelectedCardsOnlineOriginal 호출됨, selectedCards:', selectedCards.length);
+
+            if (selectedCards.length === 0) {
+                console.log('선택된 카드 없음');
+                return;
+            }
+
+            const myPlayer = players.find(p => p.isMe);
+            if (!myPlayer) {
+                console.log('myPlayer not found');
+                return;
+            }
+
+            // 내 턴인지 확인
+            const currentPlayer = players[gameState.currentPlayerIndex];
+            console.log('currentPlayerIndex:', gameState.currentPlayerIndex, 'isMe:', currentPlayer?.isMe);
+
+            if (!currentPlayer || !currentPlayer.isMe) {
+                alert('당신의 턴이 아닙니다! (현재 턴: ' + (currentPlayer?.name || '알 수 없음') + ')');
+                return;
+            }
+
+            const cardsToPlay = selectedCards.map(i => myPlayer.hand[i]);
+            const newHand = myPlayer.hand.filter((_, i) => !selectedCards.includes(i));
+
+            // 게임 상태 업데이트
+            const newDiscardPile = [...gameState.discardPile, ...cardsToPlay];
+            const newDeck = [...gameState.deck];
+
+            let newAttackStack = gameState.attackStack;
+            let newAttackType = gameState.attackType;
+            let newSkipTurns = gameState.skipTurns || 0;
+            let newDirection = gameState.direction;
+
+            // 마지막 카드의 무늬 사용
+            const lastCard = cardsToPlay[cardsToPlay.length - 1];
+            let newCurrentSuit = lastCard.suit;
+
+            // 조커는 이전 무늬 유지
+            if (lastCard.suit === 'black-joker' || lastCard.suit === 'color-joker') {
+                newCurrentSuit = gameState.currentSuit;
+            }
+
+            console.log('카드 냄:', cardsToPlay.map(c => c.suit + c.value).join(', '),
+                'currentSuit 변경:', gameState.currentSuit, '->', newCurrentSuit);
+
+            playCardPlaySound(); // 소리 추가 (온라인)
+
+            // 특수 카드 효과
+            const value = cardsToPlay[0].value;
+            const count = cardsToPlay.length;
+
+            const hasBlackJoker = cardsToPlay.some(c => c.suit === 'black-joker');
+            const hasColorJoker = cardsToPlay.some(c => c.suit === 'color-joker');
+
+            if (value === '2') {
+                newAttackStack += 2 * count;
+                newAttackType = '2';
+            } else if (value === 'A') {
+                newAttackStack += 3 * count;
+                newAttackType = 'A';
+            } else if (hasBlackJoker) {
+                newAttackStack += 5 * count; // 조커 공격
+                newAttackType = 'black-joker';
+            } else if (hasColorJoker) {
+                newAttackStack += 7 * count;
+                newAttackType = 'color-joker';
+            } else if (value === 'K') {
+                const activeCount = players.filter(p => !p.isBankrupt && p.hand.length > 0).length;
+                let kSkips = 0;
+
+                if (activeCount <= 2) {
+                    // 2인: 짝수 장(내 턴), 홀수 장(상대 턴)
+                    kSkips = (count * 2);
+                    if (count % 2 === 0) kSkips -= 1;
+                } else {
+                    // 3인 이상: 1장당 3칸 이동
+                    kSkips = (count * 3) - 1;
+                }
+
+                newSkipTurns += kSkips;
+                newAttackStack = 0;
+                newAttackType = null;
+            } else if (value === 'Q') {
+                const activeCount = players.filter(p => !p.isBankrupt && p.hand.length > 0).length;
+                if (activeCount <= 2) {
+                    newSkipTurns += 1 * count;
+                } else if (count % 2 === 1) {
+                    newDirection *= -1;
+                }
+                newAttackStack = 0;
+                newAttackType = null;
+            } else if (value === 'J') {
+                const activeCount = players.filter(p => !p.isBankrupt && p.hand.length > 0).length;
+                let jSkips = 0;
+
+                if (activeCount <= 2) {
+                    // 2인: 몇 장을 내든 상대방을 건너뛰어 내 차례 (Skip 1회 고정)
+                    jSkips = 1;
+                } else {
+                    // 3인 이상: 1장당 2칸 이동
+                    jSkips = (count * 2) - 1;
+                }
+
+                newSkipTurns += jSkips;
+                newAttackStack = 0;
+                newAttackType = null;
+            } else {
+                newAttackStack = 0;
+                newAttackType = null;
+            }
+
+            // 다음 턴 계산
+            let nextPlayerIndex = gameState.currentPlayerIndex;
+            const totalPlayers = players.length;
+
+            // 스킵 처리
+            // 기존 2인 클램프 제거됨
+
+            for (let i = 0; i <= newSkipTurns; i++) {
+                nextPlayerIndex = (nextPlayerIndex + newDirection + totalPlayers) % totalPlayers;
+                // 파산하거나 승리한 플레이어 건너뛰기
+                let safety = 0;
+                while ((players[nextPlayerIndex].isBankrupt || players[nextPlayerIndex].hand.length === 0) && safety < totalPlayers) {
+                    nextPlayerIndex = (nextPlayerIndex + newDirection + totalPlayers) % totalPlayers;
+                    safety++;
+                }
+            }
+            newSkipTurns = 0;
+
+            // 7카드 무늬 선택이 필요한 경우
+            if (value === '7' && cardsToPlay[0].suit !== 'black-joker' && cardsToPlay[0].suit !== 'color-joker') {
+                document.getElementById('suit-selector').style.display = 'flex';
+                // 임시 저장
+                window.pendingUpdate = {
+                    newHand, newDiscardPile, newDeck, newAttackStack, newAttackType,
+                    newSkipTurns, newDirection, nextPlayerIndex
+                };
+                selectedCards = [];
+                return;
+            }
+
+            // 승리 조건 확인 (손패 0장)
+            let gameStatus = gameState.status || 'playing';
+            let winner = null;
+
+            if (newHand.length === 0) {
+                gameStatus = 'finished';
+                winner = myPlayerId;
+            }
+
+            // Firebase 업데이트
+            const updates = {
+                deck: newDeck,
+                discardPile: newDiscardPile,
+                currentPlayerIndex: nextPlayerIndex,
+                direction: newDirection,
+                attackStack: newAttackStack,
+                attackType: newAttackType,
+                currentSuit: newCurrentSuit,
+                skipTurns: 0,
+                [`hands/${myPlayerId}`]: newHand
+            };
+
+            if (winner) {
+                updates.status = 'finished';
+                updates.winner = winner;
+            }
+
+            updateGameState(updates);
+
+            // 즉시 UI 업데이트
+            selectedCards = [];
+            document.getElementById('action-buttons').style.display = 'none';
+        };
+
+        const selectSuitOnlineOriginal = function (suit) {
+            document.getElementById('suit-selector').style.display = 'none';
+            if (window.pendingUpdate) {
+                const { newHand, newDiscardPile, newDeck, newAttackStack, newAttackType,
+                    newSkipTurns, newDirection, nextPlayerIndex } = window.pendingUpdate;
+
+                // 알림 메시지 생성 (색상 적용)
+                const suitColors = { 'spade': '#000', 'heart': '#e11d48', 'diamond': '#e11d48', 'club': '#000' };
+                const suitNames = { 'spade': '♠ 스페이드', 'heart': '♥ 하트', 'diamond': '♦ 다이아몬드', 'club': '♣ 클로버' };
+                const coloredSuit = `<span style="color:${suitColors[suit]};background:white;padding:2px 6px;border-radius:4px;">${suitNames[suit]}</span>`;
+                const msg = `${myNickname}님이 문양을 ${coloredSuit} (으)로 바꿨습니다!`;
+                playSuitChangeSound(); // 소리 추가
+
+                const updates = {
+                    deck: newDeck,
+                    discardPile: newDiscardPile,
+                    currentPlayerIndex: nextPlayerIndex,
+                    direction: newDirection,
+                    attackStack: newAttackStack,
+                    attackType: newAttackType,
+                    currentSuit: suit,
+                    skipTurns: 0,
+                    lastAction: msg,
+                    lastActionId: Date.now(),
+                    [`hands/${myPlayerId}`]: newHand
+                };
+
+                // 승리 체크 (손패가 0장이면 승리)
+                if (newHand.length === 0) {
+                    updates.status = 'finished';
+                    updates.winner = myPlayerId;
+                }
+
+                updateGameState(updates);
+                window.pendingUpdate = null;
+            }
+        };
+
+        const drawCardOnlineOriginal = function () {
+            const currentPlayer = players[gameState.currentPlayerIndex];
+            if (!currentPlayer || !currentPlayer.isMe) {
+                alert('당신의 턴이 아닙니다!');
+                return;
+            }
+            const myPlayer = players.find(p => p.isMe);
+            if (!myPlayer) return;
+            const cardsToDraw = gameState.attackStack > 0 ? gameState.attackStack : 1;
+            const newDeck = [...gameState.deck];
+            let newDiscardPile = [...gameState.discardPile];
+            const newHand = [...myPlayer.hand];
+            for (let i = 0; i < cardsToDraw; i++) {
+                if (newDeck.length === 0) {
+                    if (newDiscardPile.length <= 1) break; // 섞을 카드가 없으면 중단
+
+                    const topCard = newDiscardPile[newDiscardPile.length - 1];
+                    const reshuffled = newDiscardPile.slice(0, -1);
+                    shuffle(reshuffled);
+                    newDeck.push(...reshuffled);
+                    newDiscardPile = [topCard]; // 버린 카드 더미 초기화 (맨 위 1장만 남김)
+                }
+                if (newDeck.length > 0) {
+                    const newCard = newDeck.pop();
+                    newCard.drawnAt = Date.now(); // 🆕 마킹
+                    newHand.push(newCard);
+                }
+            }
+            sortHand(newHand); // 카드 정렬
+
+            // ⚠️ 2초 후 하이라이트 제거를 위해 리렌더링 (온라인 원본)
+            setTimeout(() => {
+                render();
+            }, 2100);
+            let nextPlayerIndex = (gameState.currentPlayerIndex + gameState.direction + players.length) % players.length;
+
+            // 조커 공격 후 카드를 먹으면 다음 사람은 아무 카드나 낼 수 있음
+            const wasJokerAttack = gameState.attackType === 'black-joker' || gameState.attackType === 'color-joker';
+            const nextSuit = wasJokerAttack ? 'any' : gameState.currentSuit;
+
+            // 파산 체크 (15장 초과)
+            const BANKRUPT_LIMIT = 15;
+            let isBankrupt = newHand.length > BANKRUPT_LIMIT;
+
+            const updates = {
+                deck: newDeck,
+                discardPile: newDiscardPile,
+                currentPlayerIndex: nextPlayerIndex,
+                attackStack: 0,
+                attackType: null,
+                currentSuit: nextSuit,
+                [`hands/${myPlayerId}`]: isBankrupt ? [] : newHand
+            };
+
+            if (isBankrupt) {
+                updates[`players/${myPlayerId}/isBankrupt`] = true;
+
+                // 활성 플레이어 수 체크
+                const activePlayers = players.filter(p => !p.isBankrupt && p.hand.length > 0);
+                // 나를 제외한 활성 플레이어
+                const remainingPlayers = activePlayers.filter(p => p.id !== myPlayerId);
+
+                if (remainingPlayers.length === 1) {
+                    // 마지막 남은 사람이 승리
+                    updates.status = 'finished';
+                    updates.winner = remainingPlayers[0].id;
+                }
+
+                alert('카드가 15장을 초과하여 파산했습니다! 😱');
+            }
+
+            updateGameState(updates);
+        };
+
+        function showNotification(msg) {
+            let el = document.getElementById('game-notification');
+            if (!el) {
+                // 동적 생성
+                el = document.createElement('div');
+                el.id = 'game-notification';
+                el.className = 'game-notification';
+                document.body.appendChild(el);
+
+                const style = document.createElement('style');
+                style.innerHTML = `
+        .game-notification {
+            position: fixed;
+            top: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: #fbbf24;
+            padding: 12px 25px;
+            border-radius: 30px;
+            font-size: 1.1rem;
+            z-index: 200;
+            display: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            border: 2px solid #fbbf24;
+            animation: slideDown 0.3s ease-out;
+            white-space: nowrap;
+            font-weight: bold;
+        }
+        @keyframes slideDown {
+            from { top: 10%; opacity: 0; }
+            to { top: 20%; opacity: 1; }
+        }
+                `;
+                document.head.appendChild(style);
+            }
+
+            el.innerHTML = msg;  // innerHTML으로 변경 (색상 태그 지원)
+            el.style.display = 'block';
+
+            if (window.notificationTimer) clearTimeout(window.notificationTimer);
+            window.notificationTimer = setTimeout(() => {
+                el.style.display = 'none';
+            }, 7000);  // 5초 -> 7초
+        }
+        // 새로고침/뒤로가기 방지
+        window.addEventListener('beforeunload', (e) => {
+            // 게임 화면이 보이고, 게임이 종료되지 않았을 때만 경고
+            const gameScreen = document.getElementById('game-screen');
+            const isPlaying = gameScreen && !gameScreen.classList.contains('hidden');
+
+            // 싱글 플레이거나 온라인 룸에 연결되어 있을 때
+            if (isPlaying) {
+                // 게임 종료 상태가 아니어야 함 (승리/패배 화면이 뜬 상태면 경고 불필요할 수도 있지만, 대기실 나가기 전이므로 띄우는 게 안전)
+                e.preventDefault();
+                e.returnValue = ''; // 표준
+            }
+        });
+
+        // 키보드 단축키 (Enter)
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                try {
+                    // 게임 화면 표시 여부 우선 확인
+                    const gameScreen = document.getElementById('game-screen');
+                    if (!gameScreen || gameScreen.classList.contains('hidden')) {
+                        return;
+                    }
+
+                    // 내 턴 체크
+                    let isMyTurn = false;
+                    let myHand = [];
+
+                    if (isSinglePlayer) {
+                        const player = players.find(p => p.isHuman);
+                        if (!player) return;
+
+                        const playerIndex = players.indexOf(player);
+                        isMyTurn = singlePlayerState.currentPlayerIndex === playerIndex;
+                        myHand = player.hand;
+                    } else {
+                        // Online
+                        if (!gameState) return;
+                        const currentPlayer = players[gameState.currentPlayerIndex];
+                        isMyTurn = currentPlayer && currentPlayer.isMe;
+
+                        // 내 핸드 찾기 (Online)
+                        const me = players.find(p => p.isMe);
+                        if (me) myHand = me.hand;
+                    }
+
+                    if (isMyTurn) {
+                        // 카드 선택 여부 확인
+                        if (typeof selectedCards === 'undefined') return;
+
+                        e.preventDefault();
+
+                        if (selectedCards.length > 0) {
+                            playSelectedCardsOnline();
+                        } else {
+                            // !!! 중요: 낼 수 있는 카드가 하나라도 있으면 드로우(Enter) 금지 !!!
+                            let hasPlayableCard = false;
+
+                            for (let card of myHand) {
+                                if (isSinglePlayer) {
+                                    if (canPlayCardSingle(card)) {
+                                        hasPlayableCard = true;
+                                        break;
+                                    }
+                                } else {
+                                    if (canPlayCard(card)) {
+                                        hasPlayableCard = true;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (hasPlayableCard) {
+                                // 1초 이내에 다시 눌렀는지 확인 (강제 드로우)
+                                const now = Date.now();
+                                if (window.lastEnterPressTime && (now - window.lastEnterPressTime < 1000)) {
+                                    // 더블 엔터 -> 강제 드로우
+                                    drawCardOnline();
+                                    window.lastEnterPressTime = 0;
+                                } else {
+                                    // 첫 번째 엔터 -> 경고 메시지
+                                    showNotification('카드를 낼 수 있습니다! 드로우하려면 엔터를 한 번 더 누르세요.', 'warning');
+                                    window.lastEnterPressTime = now;
+                                }
+                                return;
+                            }
+
+                            drawCardOnline();
+                        }
+                    }
+                } catch (err) {
+                    console.error('Keyboard Error:', err);
+                }
+            }
+        });
+
+        // 페이지 로드 시 저장된 닉네임 불러오기
+        (function initNickname() {
+            const saved = localStorage.getItem('onecard_nickname');
+            if (saved) {
+                document.getElementById('nickname-input').value = saved;
+            }
+        })();
+
+        // 닉네임 입력 시 저장
+        document.getElementById('nickname-input').addEventListener('input', function (e) {
+            localStorage.setItem('onecard_nickname', e.target.value);
+        });
+    </script>
+</body>
+
+</html>
