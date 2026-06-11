@@ -7,7 +7,7 @@
     <meta name="google-adsense-account" content="ca-pub-8327957315661594">
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8327957315661594"
         crossorigin="anonymous"></script>
-    <title>원카드 온라인 v3.0.4 🃏</title>
+    <title>원카드 온라인 v3.0.5 🃏</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
 
     <!-- Firebase SDK -->
@@ -981,7 +981,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v3.0.4</div>
+        <div class="version-badge">v3.0.5</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -3070,8 +3070,13 @@
                     // 🟡 중급: 스마트 AI (일반 카드 우선, 특수카드 보존)
                     chosenCards = selectSmartAI(player, playable);
                 } else {
-                    // 🟠 고급: 카운팅 AI (현재 로직)
-                    chosenCards = selectCountingAI(player, playable);
+                    // 🟠 고급: 몬테카를로 롤아웃 (실패 시 카운팅 AI 폴백)
+                    try {
+                        chosenCards = selectMonteCarloAI(player, playable);
+                    } catch (e) {
+                        console.error('🚨 MC AI 폴백:', e);
+                        chosenCards = selectCountingAI(player, playable);
+                    }
                 }
 
                 // 최종 결과 카드 내기
@@ -3167,17 +3172,32 @@
             );
 
             const myCardCount = player.hand.length;
-            const humanPlayer = players.find(p => p.isHuman);
-            const humanCardCount = humanPlayer ? humanPlayer.hand.length : 99;
             const isUnderAttack = singlePlayerState.attackStack > 0;
             const isEmergency = myCardCount <= 3;
             const canWinNow = myCardCount === 1;
 
-            // 카운팅 기반 추가 분석
+            // 공격 카드는 항상 다음 차례 플레이어에게 적중 → 다음 활성 플레이어를 타겟으로 분석
+            let nextIndex = (singlePlayerState.currentPlayerIndex + singlePlayerState.direction + players.length) % players.length;
+            let nextSafety = 0;
+            while ((players[nextIndex].isBankrupt || players[nextIndex].rank !== null) && nextSafety < players.length) {
+                nextIndex = (nextIndex + singlePlayerState.direction + players.length) % players.length;
+                nextSafety++;
+            }
+            const nextPlayer = players[nextIndex];
+            const targetCardCount = nextPlayer && nextPlayer !== player ? nextPlayer.hand.length : 99;
+
+            // 카운팅: 미공개 카드(덱+상대 손패) 중 방어 카드 비율로 타겟이 방어할 확률 추정
             const remaining2s = cardCounts.remainingValues['2'] || 0;
             const remainingAs = cardCounts.remainingValues['A'] || 0;
             const remainingJokers = cardCounts.remainingValues['JOKER'] || 0;
-            const playerLikelyHasDefense = (remaining2s + remainingAs + remainingJokers) > 2;
+            const myDefenseCount = player.hand.filter(c => c.value === '2' || c.value === 'A' || c.value === 'JOKER').length;
+            const unseenCount = Math.max(1, 54 - singlePlayerState.discardPile.length - myCardCount);
+            const unseenDefense = Math.max(0, remaining2s + remainingAs + remainingJokers - myDefenseCount);
+            let pNoDefense = 1;
+            for (let i = 0; i < targetCardCount && i < 20; i++) {
+                pNoDefense *= Math.max(0, unseenCount - unseenDefense - i) / Math.max(1, unseenCount - i);
+            }
+            const targetLikelyDefends = (1 - pNoDefense) >= 0.5;
 
             let chosenCards = [];
 
@@ -3194,10 +3214,10 @@
             } else if (canWinNow) {
                 // 승리 가능! -> 아무 카드나 내기
                 chosenCards = [playable[0]];
-            } else if (humanCardCount <= 2 && (twos.length > 0 || jokers.length > 0)) {
-                // 플레이어가 카드 적을 때 -> 공격!
-                // 카운팅: 방어 카드가 많이 남아있으면 공격 자제
-                if (!playerLikelyHasDefense || humanCardCount === 1) {
+            } else if (targetCardCount <= 2 && (twos.length > 0 || jokers.length > 0)) {
+                // 다음 플레이어가 카드 적을 때 -> 공격!
+                // 카운팅: 타겟이 방어 카드를 들고 있을 확률이 높으면 자제
+                if (!targetLikelyDefends || targetCardCount === 1) {
                     if (twos.length > 0) {
                         chosenCards = twos;
                     } else if (jokers.length > 0) {
@@ -3217,10 +3237,20 @@
                         normalGroups[val].push(pc);
                     });
 
+                    // 그룹 크기 우선 + 동률이면 낸 후 내 보유 최다 무늬가 남는 그룹 (다음 턴 무늬 장악)
+                    const suitHold = {};
+                    player.hand.forEach(c => {
+                        if (c.suit !== 'black-joker' && c.suit !== 'color-joker') suitHold[c.suit] = (suitHold[c.suit] || 0) + 1;
+                    });
                     let bestNormalGroup = null;
+                    let bestGroupScore = -1;
                     for (let val in normalGroups) {
-                        if (!bestNormalGroup || normalGroups[val].length > bestNormalGroup.length) {
-                            bestNormalGroup = normalGroups[val];
+                        const g = normalGroups[val];
+                        const suitScore = Math.max(...g.map(pc => (suitHold[pc.card.suit] || 0) - g.filter(x => x.card.suit === pc.card.suit).length));
+                        const score = g.length * 100 + suitScore;
+                        if (score > bestGroupScore) {
+                            bestGroupScore = score;
+                            bestNormalGroup = g;
                         }
                     }
                     chosenCards = bestNormalGroup;
@@ -3254,6 +3284,160 @@
             return chosenCards;
         }
 
+        // === 고급 AI: 몬테카를로 롤아웃 (미공개 카드 결정화 샘플링, 카드 훔쳐보기 없음) ===
+        function mcSnapshot() {
+            return JSON.stringify({
+                deck: singlePlayerState.deck,
+                discardPile: singlePlayerState.discardPile,
+                currentSuit: singlePlayerState.currentSuit,
+                currentPlayerIndex: singlePlayerState.currentPlayerIndex,
+                direction: singlePlayerState.direction,
+                attackStack: singlePlayerState.attackStack,
+                attackType: singlePlayerState.attackType,
+                skipTurns: singlePlayerState.skipTurns,
+                hands: players.map(p => p.hand),
+                bankrupts: players.map(p => p.isBankrupt),
+                ranks: players.map(p => p.rank)
+            });
+        }
+
+        function mcRestore(json) {
+            const s = JSON.parse(json);
+            singlePlayerState.deck = s.deck;
+            singlePlayerState.discardPile = s.discardPile;
+            singlePlayerState.currentSuit = s.currentSuit;
+            singlePlayerState.currentPlayerIndex = s.currentPlayerIndex;
+            singlePlayerState.direction = s.direction;
+            singlePlayerState.attackStack = s.attackStack;
+            singlePlayerState.attackType = s.attackType;
+            singlePlayerState.skipTurns = s.skipTurns;
+            players.forEach((p, i) => {
+                p.hand = s.hands[i];
+                p.isBankrupt = s.bankrupts[i];
+                p.rank = s.ranks[i];
+            });
+        }
+
+        // 내 손패/버린 더미 외 미공개 카드(덱+상대 손패)를 무작위 재배분 — 정보 공정성 유지
+        function mcDeterminize(myIndex) {
+            const pool = [...singlePlayerState.deck];
+            players.forEach((p, i) => { if (i !== myIndex) pool.push(...p.hand); });
+            shuffle(pool);
+            players.forEach((p, i) => { if (i !== myIndex) p.hand = pool.splice(0, p.hand.length); });
+            singlePlayerState.deck = pool;
+        }
+
+        function mcPlayableOf(player) {
+            const arr = [];
+            for (let i = 0; i < player.hand.length; i++)
+                if (canPlayCardSingle(player.hand[i])) arr.push({ index: i, card: player.hand[i] });
+            return arr;
+        }
+
+        function mcApplyCards(player, chosen) {
+            const indices = chosen.map(pc => pc.index).sort((a, b) => b - a);
+            const cards = indices.map(i => player.hand[i]);
+            indices.forEach(i => player.hand.splice(i, 1));
+            cards.forEach(c => singlePlayerState.discardPile.push(c));
+            const lastCard = cards[cards.length - 1];
+            if (lastCard.suit !== 'black-joker' && lastCard.suit !== 'color-joker') singlePlayerState.currentSuit = lastCard.suit;
+            if (lastCard.value === '7') {
+                const suitCounts = {};
+                player.hand.forEach(c => { if (c.suit !== 'black-joker' && c.suit !== 'color-joker') suitCounts[c.suit] = (suitCounts[c.suit] || 0) + 1; });
+                let bestSuit = singlePlayerState.currentSuit || 'spade', maxCount = 0;
+                for (let s in suitCounts) if (suitCounts[s] > maxCount) { maxCount = suitCounts[s]; bestSuit = s; }
+                singlePlayerState.currentSuit = bestSuit;
+            }
+            handleSpecialCardsSingle(cards);
+        }
+
+        // nextTurnSingle의 턴 전진 수학과 동일 (UI 없이)
+        function mcAdvanceTurn() {
+            const step = () => { singlePlayerState.currentPlayerIndex = (singlePlayerState.currentPlayerIndex + singlePlayerState.direction + players.length) % players.length; };
+            while (singlePlayerState.skipTurns > 0) {
+                step();
+                let s = 0;
+                while ((players[singlePlayerState.currentPlayerIndex].isBankrupt || players[singlePlayerState.currentPlayerIndex].rank !== null) && s < players.length) { step(); s++; }
+                singlePlayerState.skipTurns--;
+            }
+            step();
+            let s = 0;
+            while ((players[singlePlayerState.currentPlayerIndex].isBankrupt || players[singlePlayerState.currentPlayerIndex].rank !== null) && s < players.length) { step(); s++; }
+        }
+
+        // 모든 플레이어를 중급 정책으로 가상 진행, 내가 1등이면 true
+        function mcRollout(myIndex, maxTurns) {
+            for (let t = 0; t < maxTurns; t++) {
+                const active = players.filter(p => !p.isBankrupt && p.rank === null);
+                if (active.length <= 1) {
+                    if (active.length === 1) active[0].rank = players.filter(p => p.rank !== null).length + 1;
+                    break;
+                }
+                const p = players[singlePlayerState.currentPlayerIndex];
+                if (!p.isBankrupt && p.rank === null) {
+                    const playable = mcPlayableOf(p);
+                    if (playable.length > 0) {
+                        mcApplyCards(p, selectSmartAI(p, playable));
+                        if (p.hand.length === 0) p.rank = players.filter(x => x.rank !== null).length + 1;
+                    } else {
+                        drawCardsForPlayerSingle(p);
+                    }
+                }
+                if (players[myIndex].rank !== null && players[myIndex].rank !== 1) break;
+                mcAdvanceTurn();
+            }
+            return players[myIndex].rank === 1;
+        }
+
+        // 롤아웃 중 UI/사운드/타이머 부수효과 차단 후 원복
+        function mcSilenced(fn) {
+            const o = { setMessage, renderSingle, showNotification, playCardDrawSound, playCardPlaySound, playSuitChangeSound, playTurnSound, st: window.setTimeout };
+            try {
+                setMessage = () => {}; renderSingle = () => {}; showNotification = () => {};
+                playCardDrawSound = () => {}; playCardPlaySound = () => {}; playSuitChangeSound = () => {}; playTurnSound = () => {};
+                window.setTimeout = () => 0;
+                return fn();
+            } finally {
+                setMessage = o.setMessage; renderSingle = o.renderSingle; showNotification = o.showNotification;
+                playCardDrawSound = o.playCardDrawSound; playCardPlaySound = o.playCardPlaySound;
+                playSuitChangeSound = o.playSuitChangeSound; playTurnSound = o.playTurnSound;
+                window.setTimeout = o.st;
+            }
+        }
+
+        function selectMonteCarloAI(player, playable) {
+            const myIndex = players.indexOf(player);
+            const groups = {};
+            playable.forEach(pc => { const v = pc.card.value; (groups[v] = groups[v] || []).push(pc); });
+            const candidates = Object.keys(groups).map(v => groups[v]);
+            if (candidates.length <= 1) return candidates[0] || [playable[0]];
+
+            return mcSilenced(() => {
+                const snap = mcSnapshot();
+                const K = 32; // 후보당 롤아웃 수
+                let best = candidates[0], bestWins = -1;
+                for (const cand of candidates) {
+                    let wins = 0;
+                    for (let k = 0; k < K; k++) {
+                        mcRestore(snap);
+                        mcDeterminize(myIndex);
+                        const me = players[myIndex];
+                        mcApplyCards(me, cand.map(pc => ({ index: pc.index, card: me.hand[pc.index] })));
+                        if (me.hand.length === 0) me.rank = players.filter(x => x.rank !== null).length + 1;
+                        if (me.rank !== null) {
+                            if (me.rank === 1) wins++;
+                        } else {
+                            mcAdvanceTurn();
+                            if (mcRollout(myIndex, 300)) wins++;
+                        }
+                    }
+                    if (wins > bestWins) { bestWins = wins; best = cand; }
+                }
+                mcRestore(snap);
+                return best;
+            });
+        }
+
         // 카드 내기 실행 (공통 로직)
         function executeAICardPlay(player, chosenCards, playable) {
             try {
@@ -3266,6 +3450,15 @@
                 const cards = indices.map(i => player.hand[i]);
 
                 indices.forEach(i => player.hand.splice(i, 1));
+
+                if (aiDifficulty === 'advanced' && cards.length > 1) {
+                    // 고급: 마지막 카드(=다음 currentSuit)가 내 보유 최다 무늬가 되도록 정렬
+                    const suitHold = {};
+                    player.hand.forEach(c => {
+                        if (c.suit !== 'black-joker' && c.suit !== 'color-joker') suitHold[c.suit] = (suitHold[c.suit] || 0) + 1;
+                    });
+                    cards.sort((a, b) => (suitHold[a.suit] || 0) - (suitHold[b.suit] || 0));
+                }
                 cards.forEach(card => singlePlayerState.discardPile.push(card));
                 playCardPlaySound();
 
@@ -3284,11 +3477,25 @@
                     });
 
                     let bestSuit = singlePlayerState.currentSuit || 'spade';
-                    let maxCount = 0;
-                    for (let suit in suitCounts) {
-                        if (suitCounts[suit] > maxCount) {
-                            maxCount = suitCounts[suit];
-                            bestSuit = suit;
+                    if (aiDifficulty === 'advanced') {
+                        // 고급: 내 보유 수 우선, 동률이면 미공개로 적게 남은 무늬 (상대가 받기 어려운 무늬)
+                        const remainingSuits = getCardCounts().remainingSuits;
+                        let bestScore = -1;
+                        for (let suit in suitCounts) {
+                            const oppRemaining = Math.max(0, (remainingSuits[suit] || 0) - suitCounts[suit]);
+                            const score = suitCounts[suit] * 100 + (13 - oppRemaining);
+                            if (score > bestScore) {
+                                bestScore = score;
+                                bestSuit = suit;
+                            }
+                        }
+                    } else {
+                        let maxCount = 0;
+                        for (let suit in suitCounts) {
+                            if (suitCounts[suit] > maxCount) {
+                                maxCount = suitCounts[suit];
+                                bestSuit = suit;
+                            }
                         }
                     }
                     singlePlayerState.currentSuit = bestSuit;
