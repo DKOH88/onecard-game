@@ -7,7 +7,7 @@
     <meta name="google-adsense-account" content="ca-pub-8327957315661594">
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8327957315661594"
         crossorigin="anonymous"></script>
-    <title>원카드 온라인 v3.0.3 🃏</title>
+    <title>원카드 온라인 v3.0.4 🃏</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
 
     <!-- Firebase SDK -->
@@ -981,7 +981,7 @@
     <!-- 로비 화면 -->
     <div class="lobby-container" id="lobby-screen">
         <h2>🎮 게임 로비</h2>
-        <div class="version-badge">v3.0.3</div>
+        <div class="version-badge">v3.0.4</div>
 
         <div id="main-menu">
             <div class="input-group">
@@ -2448,130 +2448,6 @@
             }
         }
 
-        // 온라인 무늬 선택
-
-        function selectSuitOnline(suit) {
-            document.getElementById('suit-selector').style.display = 'none';
-
-            if (window.pendingUpdate) {
-                const { newHand, newDiscardPile, newDeck, newAttackStack, newAttackType,
-                    newSkipTurns, newDirection, nextPlayerIndex, expectedTurnIndex } = window.pendingUpdate;
-
-                const suitNameText = { 'spade': '♠ 스페이드', 'heart': '♥ 하트', 'diamond': '♦ 다이아몬드', 'club': '♣ 클로버' };
-                const actorName = sanitizeNickname(myNickname) || '플레이어';
-                const actionMsg = `${actorName}님이 문양을 ${suitNameText[suit]} (으)로 바꿨습니다!`;
-
-                updateGameState({
-                    deck: newDeck,
-                    discardPile: newDiscardPile,
-                    currentPlayerIndex: nextPlayerIndex,
-                    direction: newDirection,
-                    attackStack: newAttackStack,
-                    attackType: newAttackType,
-                    currentSuit: suit,
-                    skipTurns: 0,
-                    [`hands/${myPlayerId}`]: newHand,
-                    lastAction: actionMsg,
-                    lastActionId: Date.now()
-                }, {
-                    expectedTurnIndex,
-                    actorId: myPlayerId
-                });
-
-                window.pendingUpdate = null;
-            }
-        }
-
-        function drawCardOnline() {
-            // AudioContext 미리 resume (브라우저 정책 대응)
-            if (audioContext.state === 'suspended') {
-                audioContext.resume();
-            }
-
-            const currentPlayer = players[gameState.currentPlayerIndex];
-            if (!currentPlayer || !currentPlayer.isMe) {
-                alert('당신의 턴이 아닙니다!');
-                return;
-            }
-            const expectedTurnIndex = gameState.currentPlayerIndex;
-
-            const myPlayer = players.find(p => p.isMe);
-            if (!myPlayer) return;
-
-            const cardsToDraw = gameState.attackStack > 0 ? gameState.attackStack : 1;
-            const newDeck = [...gameState.deck];
-            const newHand = [...myPlayer.hand];
-
-            for (let i = 0; i < cardsToDraw; i++) {
-                if (newDeck.length === 0) {
-                    // 덱 리셔플
-                    const topCard = gameState.discardPile[gameState.discardPile.length - 1];
-                    const reshuffled = gameState.discardPile.slice(0, -1);
-                    shuffle(reshuffled);
-                    newDeck.push(...reshuffled);
-                }
-                if (newDeck.length > 0) {
-                    const newCard = newDeck.pop();
-                    newCard.drawnAt = Date.now(); // 🆕 마킹
-                    newHand.push(newCard);
-                    playCardDrawSound(); // 소리 추가 (온라인)
-                }
-            }
-            sortHand(newHand); // 카드 정렬
-
-            // ⚠️ 2초 후 하이라이트 제거를 위해 리렌더링 (온라인)
-            setTimeout(() => {
-                render();
-            }, 2100);
-
-            // 다음 턴
-            let nextPlayerIndex = (gameState.currentPlayerIndex + gameState.direction + players.length) % players.length;
-
-            // 조커 공격 후 카드 먹으면 아무 카드나 낼 수 있음
-            const wasJokerAttack = gameState.attackType === 'black-joker' || gameState.attackType === 'color-joker';
-
-            // 파산 체크 (15장 초과)
-            const nextSuit = wasJokerAttack ? 'any' : gameState.currentSuit;
-            let isBankrupt = false;
-            let rank = null;
-            let winner = null;
-
-            if (newHand.length > 15) {
-                isBankrupt = true;
-                const activePlayers = players.filter(p => !p.isBankrupt && p.rank === null);
-                rank = activePlayers.length;
-                if (activePlayers.length - 1 === 1) {
-                    const survivor = activePlayers.find(p => p.id !== myPlayerId);
-                    if (survivor) winner = survivor.id;
-                }
-                alert('카드가 15장을 초과하여 파산했습니다! 😱');
-            }
-
-            const updates = {
-                deck: newDeck,
-                currentPlayerIndex: nextPlayerIndex,
-                attackStack: 0,
-                attackType: null,
-                currentSuit: nextSuit,
-                skipTurns: 0,
-                [`hands/${myPlayerId}`]: newHand
-            };
-
-            if (isBankrupt) {
-                updates[`players/${myPlayerId}/isBankrupt`] = true;
-                updates[`players/${myPlayerId}/rank`] = rank;
-            }
-            if (winner) {
-                updates.status = 'finished';
-                updates.winner = winner;
-            }
-
-            updateGameState(updates, {
-                expectedTurnIndex,
-                actorId: myPlayerId
-            });
-        }
-
         function updateGameState(updates, options = {}) {
             if (!roomRef) return Promise.resolve(false);
 
@@ -2875,14 +2751,13 @@
                 singlePlayerState.attackStack += 3 * count;
                 singlePlayerState.attackType = 'A';
                 setMessage(`⚔️ +${3 * count}장! (누적: ${singlePlayerState.attackStack}장)`, 'attack');
-            } else if (hasBlackJoker) {
-                singlePlayerState.attackStack += 5 * count;
-                singlePlayerState.attackType = 'black-joker';
-                setMessage(`🖤 +${5 * count}장!`, 'attack');
-            } else if (hasColorJoker) {
-                singlePlayerState.attackStack += 7 * count;
-                singlePlayerState.attackType = 'color-joker';
-                setMessage(`🌈 +${7 * count}장!`, 'attack');
+            } else if (hasBlackJoker || hasColorJoker) {
+                // 조커 공격: 흑백 +5 / 컬러 +7 (혼합 플레이 시 장별 합산)
+                const jokerAttack = cards.reduce((sum, c) => sum + (c.suit === 'color-joker' ? 7 : 5), 0);
+                singlePlayerState.attackStack += jokerAttack;
+                singlePlayerState.attackType = hasColorJoker ? 'color-joker' : 'black-joker';
+                const jokerEmoji = hasBlackJoker && hasColorJoker ? '🃏' : (hasColorJoker ? '🌈' : '🖤');
+                setMessage(`${jokerEmoji} +${jokerAttack}장!`, 'attack');
             } else if (value === 'K') {
                 const activeCount = players.filter(p => !p.isBankrupt && p.rank === null).length;
                 let kSkips = 0;
@@ -2909,6 +2784,8 @@
                 } else if (count % 2 === 1) {
                     singlePlayerState.direction *= -1;
                     setMessage(`👸 방향 전환! ${singlePlayerState.direction === 1 ? '⟳' : '⟲'}`);
+                } else {
+                    setMessage(`👸 방향 전환 ×${count} — 제자리! ${singlePlayerState.direction === 1 ? '⟳' : '⟲'}`);
                 }
                 singlePlayerState.attackStack = 0;
                 singlePlayerState.attackType = null;
@@ -3063,8 +2940,10 @@
 
             while (singlePlayerState.skipTurns > 0) {
                 singlePlayerState.currentPlayerIndex = (singlePlayerState.currentPlayerIndex + singlePlayerState.direction + players.length) % players.length;
-                while (players[singlePlayerState.currentPlayerIndex].isBankrupt || players[singlePlayerState.currentPlayerIndex].rank !== null) {
+                let skipSafety = 0;
+                while ((players[singlePlayerState.currentPlayerIndex].isBankrupt || players[singlePlayerState.currentPlayerIndex].rank !== null) && skipSafety < players.length) {
                     singlePlayerState.currentPlayerIndex = (singlePlayerState.currentPlayerIndex + singlePlayerState.direction + players.length) % players.length;
+                    skipSafety++;
                 }
                 singlePlayerState.skipTurns--;
             }
@@ -3483,6 +3362,12 @@
         }
 
         function restartSingleGame() {
+            // 이전 게임의 AI 왓치독 정리 (고스트 턴 방지)
+            if (aiTurnWatchdog) {
+                clearTimeout(aiTurnWatchdog);
+                aiTurnWatchdog = null;
+            }
+
             // 내 카드 영역 다시 보이기
             const bottomSlot = document.getElementById('slot-bottom');
             if (bottomSlot) bottomSlot.style.display = '';
@@ -3610,12 +3495,10 @@
             } else if (value === 'A') {
                 newAttackStack += 3 * count;
                 newAttackType = 'A';
-            } else if (hasBlackJoker) {
-                newAttackStack += 5 * count; // 조커 공격
-                newAttackType = 'black-joker';
-            } else if (hasColorJoker) {
-                newAttackStack += 7 * count;
-                newAttackType = 'color-joker';
+            } else if (hasBlackJoker || hasColorJoker) {
+                // 조커 공격: 흑백 +5 / 컬러 +7 (혼합 플레이 시 장별 합산)
+                newAttackStack += cardsToPlay.reduce((sum, c) => sum + (c.suit === 'color-joker' ? 7 : 5), 0);
+                newAttackType = hasColorJoker ? 'color-joker' : 'black-joker';
             } else if (value === 'K') {
                 const activeCount = players.filter(p => !p.isBankrupt && p.hand.length > 0 && p.connected !== false).length;
                 let kSkips = 0;
